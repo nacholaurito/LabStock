@@ -50,13 +50,10 @@
             <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
                 <i class="fa-solid fa-tags"></i> Etiquetas
             </button>
-            <button onclick="switchTab('settings')" id="pc-btn-settings" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-gear"></i> Ajustes
-            </button>
         </nav>
 
         <div class="flex items-center space-x-2">
-            <div id="cloudStatus" class="hidden sm:flex items-center space-x-1.5 text-xs bg-slate-700 px-2.5 py-1 rounded-full text-slate-300">
+            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-700 px-2.5 py-1 rounded-full text-slate-300">
                 <span id="statusIndicator" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                 <span id="statusText">Conectando...</span>
             </div>
@@ -184,30 +181,6 @@
             </div>
         </section>
 
-        <!-- 4. PESTAÑA CONFIGURACIÓN -->
-        <section id="tab-settings" class="tab-content hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
-                <h2 class="text-base font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-cloud-arrow-up text-lab-500"></i> Conexión a la Nube (Firebase)
-                </h2>
-                <div class="space-y-3 pt-2">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">databaseURL</label>
-                        <input type="text" id="fbDbUrl" placeholder="https://tu-proyecto-default-rtdb.firebaseio.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">apiKey</label>
-                        <input type="text" id="fbApiKey" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">projectId</label>
-                        <input type="text" id="fbProjectId" placeholder="tu-proyecto-lab" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                    </div>
-                    <button onclick="saveFirebaseConfig()" class="w-full bg-lab-600 hover:bg-lab-700 text-white py-2.5 rounded-lg text-sm font-semibold shadow">Guardar Conexión y Conectar</button>
-                </div>
-            </div>
-        </section>
-
     </main>
 
     <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL) -->
@@ -223,10 +196,6 @@
         <button onclick="switchTab('labels')" id="mob-btn-labels" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition">
             <i class="fa-solid fa-tags text-lg"></i>
             <span class="text-[10px] font-medium mt-0.5">Etiquetas</span>
-        </button>
-        <button onclick="switchTab('settings')" id="mob-btn-settings" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition">
-            <i class="fa-solid fa-gear text-lg"></i>
-            <span class="text-[10px] font-medium mt-0.5">Ajustes</span>
         </button>
     </nav>
 
@@ -319,17 +288,18 @@
         let scanMode = 'deduct';
         let dbRef = null;
 
-        const savedConfig = JSON.parse(localStorage.getItem('lab_firebase_config')) || null;
+        // ==========================================
+        // CONFIGURACIÓN FIJA DE FIREBASE (AUTOMÁTICA)
+        // Reemplaza los textos con los datos de tu consola de Firebase
+        // ==========================================
+        const firebaseConfig = {
+            databaseURL: "https://TU-PROYECTO-default-rtdb.firebaseio.com",
+            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
+            projectId: "labstock-80756"
+        };
 
-        if (savedConfig) {
-            document.getElementById('fbDbUrl').value = savedConfig.databaseURL || '';
-            document.getElementById('fbApiKey').value = savedConfig.apiKey || '';
-            document.getElementById('fbProjectId').value = savedConfig.projectId || '';
-            initFirebase(savedConfig);
-        } else {
-            updateCloudStatus('offline', 'Modo Local (Configurar Nube en Ajustes)');
-            loadDemoDataLocal();
-        }
+        // Inicialización automática al cargar la página
+        initFirebase(firebaseConfig);
 
         function initFirebase(config) {
             try {
@@ -357,21 +327,6 @@
             }
         }
 
-        function saveFirebaseConfig() {
-            const config = {
-                databaseURL: document.getElementById('fbDbUrl').value.trim(),
-                apiKey: document.getElementById('fbApiKey').value.trim(),
-                projectId: document.getElementById('fbProjectId').value.trim()
-            };
-            if (!config.databaseURL || !config.projectId) {
-                alert('Completa databaseURL y projectId.');
-                return;
-            }
-            localStorage.setItem('lab_firebase_config', JSON.stringify(config));
-            alert('¡Configuración guardada! Recargando...');
-            location.reload();
-        }
-
         function updateCloudStatus(status, text) {
             const indicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
@@ -383,15 +338,6 @@
             } else {
                 indicator.className = "w-2 h-2 rounded-full bg-rose-500";
             }
-        }
-
-        function loadDemoDataLocal() {
-            inventoryMap = {
-                'demo1': { code: '00380740011444', name: 'Architect rHTLV-I/II', section: 'Inmunología', stock: 5, batch: '79132BE00', expiry: '2026-07-22' }
-            };
-            inventoryArray = Object.keys(inventoryMap).map(key => ({ id: key, ...inventoryMap[key] }));
-            updateReagentDatalist();
-            filterInventory();
         }
 
         function updateReagentDatalist() {
@@ -421,7 +367,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
 
-            ['inventory', 'scan', 'labels', 'settings'].forEach(id => {
+            ['inventory', 'scan', 'labels'].forEach(id => {
                 const pcBtn = document.getElementById(`pc-btn-${id}`);
                 const mobBtn = document.getElementById(`mob-btn-${id}`);
                 if (pcBtn) {
@@ -488,27 +434,23 @@
             if (!item) return;
             const newStock = Math.max(0, item.stock + amount);
             if (dbRef) dbRef.child(id).update({ stock: newStock });
-            else { item.stock = newStock; filterInventory(); }
         }
 
         function deleteItemCloud(id) {
             if (confirm('¿Eliminar este ítem?')) {
                 if (dbRef) dbRef.child(id).remove();
-                else { delete inventoryMap[id]; inventoryArray = Object.keys(inventoryMap).map(k => ({ id: k, ...inventoryMap[k] })); filterInventory(); }
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 ROBUSTO (CORREGIDO PARA LOTE / AI 10) ---
+        // --- PARSER INTELIGENTE GS1 ROBUSTO ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
-            // Limpia paréntesis, barras y caracteres de control GS1 (FNC1 / \x1D)
             let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d]/g, '');
 
             let code = '';
             let batch = '';
             let expiry = '';
 
-            // 1. Extraer GTIN (AI 01 de 14 dígitos exactos)
             const matchGtin = clean.match(/01(\d{14})/);
             if (matchGtin) {
                 code = matchGtin[1];
@@ -516,7 +458,6 @@
                 code = clean.substring(0, 14);
             }
 
-            // 2. Extraer Vencimiento (AI 17 de 6 dígitos: AAMMDD)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -526,7 +467,6 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Extraer Lote (AI 10 - Lote/Batch: captura letras, números, guiones, barras y puntos)
             const matchBatch = clean.match(/10([A-Za-z0-9\-\/\.\_]{1,20})/);
             if (matchBatch) {
                 batch = matchBatch[1];
@@ -544,13 +484,12 @@
             document.getElementById('quickPasteInput').value = '';
         }
 
-        // --- ESCÁNER DENTRO DEL MODAL (FORMATO CUADRADO 220x220) ---
+        // --- ESCÁNER DENTRO DEL MODAL ---
         function startModalScanner() {
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
             
             modalQrCode = new Html5Qrcode("modal-reader");
-            
             const config = { 
                 fps: 10, 
                 qrbox: { width: 220, height: 220 },
@@ -652,12 +591,6 @@
             if (dbRef) {
                 if (key === "") dbRef.push(newItem);
                 else dbRef.child(key).set(newItem);
-            } else {
-                const targetKey = key === "" ? 'item_' + Date.now() : key;
-                inventoryMap[targetKey] = newItem;
-                inventoryArray = Object.keys(inventoryMap).map(k => ({ id: k, ...inventoryMap[k] }));
-                updateReagentDatalist();
-                filterInventory();
             }
             closeNewItemModal();
         }
@@ -669,7 +602,7 @@
             document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
         }
 
-        // --- ESCÁNER PRINCIPAL (FORMATO CUADRADO 250x250) ---
+        // --- ESCÁNER PRINCIPAL ---
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
@@ -763,7 +696,7 @@
         function populateLabelSelect() {
             const select = document.getElementById('labelItemSelect');
             select.innerHTML = '';
-            inventoryArray.forEach((item) => {
+            inventoryArray.each?.((item) => {}) || inventoryArray.forEach((item) => {
                 const opt = document.createElement('option');
                 opt.value = item.id;
                 opt.text = `${item.name} (${item.code})`;
