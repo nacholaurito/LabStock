@@ -282,7 +282,7 @@
         // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com/",
+            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
             apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
             projectId: "labstock-80756"
         };
@@ -430,7 +430,7 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 ---
+        // --- PARSER INTELIGENTE GS1 ULTRA ROBUSTO PARA LOTES ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
             let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
@@ -439,6 +439,7 @@
             let batch = '';
             let expiry = '';
 
+            // 1. GTIN (AI 01 -> 14 dígitos)
             const matchGtin = clean.match(/01(\d{14})/);
             if (matchGtin) {
                 code = matchGtin[1];
@@ -446,6 +447,7 @@
                 code = clean.substring(0, 14);
             }
 
+            // 2. Expiración (AI 17 -> 6 dígitos AAMMDD)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -455,9 +457,18 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            const matchBatch = clean.match(/10([A-Za-z0-9\-\/\.\_]+?)(?=17\d{6}|$)/);
-            if (matchBatch) {
-                batch = matchBatch[1];
+            // 3. Lote (AI 10 -> Búsqueda avanzada y segura)
+            const idx = clean.indexOf('10');
+            if (idx !== -1) {
+                let sub = clean.substring(idx + 2);
+                // Buscamos si el siguiente AI (como 17 + 6 dígitos) viene inmediatamente después
+                let matchNext17 = sub.match(/17\d{6}/);
+                if (matchNext17) {
+                    let pos = sub.indexOf(matchNext17[0]);
+                    batch = sub.substring(0, pos);
+                } else {
+                    batch = sub;
+                }
             }
 
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
