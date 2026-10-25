@@ -146,8 +146,8 @@
                 <div class="mt-4 pt-4 border-t border-slate-700">
                     <label class="block text-xs font-medium text-slate-400 mb-1">Entrada manual / Pistola USB</label>
                     <div class="flex gap-2">
-                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí código o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                        <button onclick="processScannedCode(document.getElementById('manualScanInput').value); document.getElementById('manualScanInput').value='';" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Procesar</button>
+                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí código o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <button onclick="processScannedCode(document.getElementById('manualScanInput').value); document.getElementById('manualScanInput').value='';" class="bg-slate-700 hover:bg-slate-600 text-white px-4 h-10 rounded-lg text-sm font-semibold">Procesar</button>
                     </div>
                 </div>
 
@@ -166,7 +166,7 @@
                 </h2>
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Seleccionar Reactivo</label>
-                    <select id="labelItemSelect" onchange="generateBarcodePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                    <select id="labelItemSelect" onchange="generateBarcodePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                     </select>
                 </div>
                 <div id="labelPreviewContainer" class="bg-white text-slate-900 p-4 rounded-lg flex flex-col items-center justify-center border border-slate-300 shadow-inner">
@@ -212,8 +212,8 @@
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Código / GTIN del Reactivo</label>
                     <div class="flex gap-2">
-                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 shadow shrink-0 whitespace-nowrap" title="Escanear DataMatrix con cámara">
+                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 h-10 rounded-lg text-xs font-medium flex items-center gap-1 shadow shrink-0 whitespace-nowrap" title="Escanear DataMatrix con cámara">
                             <i class="fa-solid fa-camera"></i> Escanear
                         </button>
                     </div>
@@ -225,7 +225,7 @@
 
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná o escribí)</label>
-                    <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II, Virclia Parvovirus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II, Virclia Parvovirus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     <datalist id="commonReagentsList">
                         <option value="Architect rHTLV-I/II">
                         <option value="Virclia Parvovirus IgM Monotest">
@@ -238,7 +238,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Sección</label>
-                        <select id="itemSection" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                        <select id="itemSection" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                             <option value="Química">Química Clínica</option>
                             <option value="Hematología">Hematología</option>
                             <option value="Inmunología">Inmunología</option>
@@ -248,17 +248,17 @@
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Cantidad / Stock</label>
-                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">N° de Lote</label>
-                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Vencimiento</label>
-                        <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                 </div>
                 <div class="flex gap-2 pt-2">
