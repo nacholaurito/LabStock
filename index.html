@@ -118,8 +118,9 @@
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix / GS1
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner Inteligente
                     </h2>
+                    <!-- OPCIONES DE MODO (Descontar, Agregar, Consultar) -->
                     <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1">
                         <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition">⚡ Descontar</button>
                         <button onclick="setScanMode('add')" id="modeBtnAdd" class="px-2.5 py-1 rounded-md text-slate-400 font-medium transition">➕ Agregar</button>
@@ -145,11 +146,10 @@
                     </button>
                 </div>
 
-                <!-- ENTRADA MANUAL / PISTOLA / TRAMA GS1 -->
                 <div class="mt-4 pt-4 border-t border-slate-700">
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Entrada manual / Pistola USB / Pegar trama GS1</label>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Entrada manual / Lector USB (Pistola)</label>
                     <div class="flex gap-2">
-                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Ej: (01)003807... o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí o escaneá código..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                         <button onclick="processScannedCode(document.getElementById('manualScanInput').value); document.getElementById('manualScanInput').value='';" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Procesar</button>
                     </div>
                 </div>
@@ -244,7 +244,7 @@
                     <label class="block text-xs font-medium text-slate-400 mb-1">Código / GTIN del Reactivo</label>
                     <div class="flex gap-2">
                         <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 shadow" title="Escanear DataMatrix con cámara">
+                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 shadow" title="Escanear QR con cámara">
                             <i class="fa-solid fa-camera"></i> Escanear
                         </button>
                         <button type="button" onclick="generateRandomCode()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-medium">Generar</button>
@@ -252,15 +252,6 @@
                     <div id="modalReaderContainer" class="hidden aspect-video bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
                         <div id="modal-reader" class="w-full h-full"></div>
                         <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow">Cerrar Cámara</button>
-                    </div>
-                </div>
-
-                <!-- PEGAR TRAMA GS1 EN EL MODAL (Alternativa infalible si la cámara web no enfoca el DataMatrix) -->
-                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700 text-xs">
-                    <label class="block text-slate-400 mb-1">Pegá la tira GS1 aquí si querés autocompletar al instante:</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="quickPasteInput" placeholder="(01)... (17)... (10)..." class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-100">
-                        <button type="button" onclick="applyQuickPaste()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white font-medium">Rellenar</button>
                     </div>
                 </div>
 
@@ -498,20 +489,17 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 ESTABLE Y CORREGIDO ---
+        // --- PARSER INTELIGENTE GS1 ---
         function parseSmartQR(rawData) {
-            if (!rawData) return { code: '', batch: '', expiry: '' };
-            let clean = rawData.trim().replace(/[()\\]/g, '');
-
-            let code = rawData.trim();
+            let code = rawData;
             let batch = '';
             let expiry = '';
 
-            // 1. Extraer GTIN (AI 01 de 14 dígitos)
+            let clean = rawData.replace(/[()\\]/g, '');
+
             const matchGtin = clean.match(/01(\d{14})/);
             if (matchGtin) code = matchGtin[1];
 
-            // 2. Extraer Vencimiento (AI 17 de 6 dígitos)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -521,43 +509,27 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Extraer Lote (AI 10 - Límite de 12 caracteres para capturar exacto el lote sin solapar con otros IDs)
-            const matchBatch = clean.match(/10([A-Za-z0-9\-]{1,12})/);
-            if (matchBatch) {
-                batch = matchBatch[1];
+            const idx10 = clean.indexOf('10');
+            if (idx10 !== -1) {
+                let sub = clean.substring(idx10 + 2);
+                let batchMatch = sub.match(/^([A-Za-z0-9\-]+)/);
+                if (batchMatch) batch = batchMatch[1];
+            } else {
+                const matchBatch = clean.match(/10([A-Za-z0-9\-]+)/);
+                if (matchBatch) batch = matchBatch[1];
             }
 
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        function applyQuickPaste() {
-            const val = document.getElementById('quickPasteInput').value;
-            const parsed = parseSmartQR(val);
-            if (parsed.code && parsed.code.length > 5) document.getElementById('itemCode').value = parsed.code;
-            if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
-            if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
-            document.getElementById('quickPasteInput').value = '';
-        }
-
-        // --- ESCÁNER DENTRO DEL MODAL CONFIGURADO PARA DATAMATRIX ---
+        // --- ESCÁNER DENTRO DEL MODAL ---
         function startModalScanner() {
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
-            
             modalQrCode = new Html5Qrcode("modal-reader");
-            
-            const config = { 
-                fps: 10, 
-                qrbox: { width: 220, height: 110 },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.DATA_MATRIX,
-                    Html5QrcodeSupportedFormats.QR_CODE
-                ]
-            };
-
             modalQrCode.start(
                 { facingMode: "environment" },
-                config,
+                { fps: 10, qrbox: { width: 220, height: 110 } },
                 (decodedText) => {
                     const parsed = parseSmartQR(decodedText);
                     if (parsed.code) document.getElementById('itemCode').value = parsed.code;
@@ -592,8 +564,8 @@
             stopModalScanner();
             
             if (prefillData) {
-                if (prefillData.code) document.getElementById('itemCode').value = prefillData.code;
-                if (prefillData.batch) document.getElementById('itemBatch').value = prefillData.batch;
+                document.getElementById('itemCode').value = prefillData.code || '';
+                document.getElementById('itemBatch').value = prefillData.batch || '';
                 if (prefillData.expiry) document.getElementById('itemExpiry').value = prefillData.expiry;
                 document.getElementById('itemName').focus();
             } else {
@@ -663,24 +635,12 @@
             document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
         }
 
-        // --- ESCÁNER PRINCIPAL CONFIGURADO PARA DATAMATRIX ---
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
-            
             html5QrCode = new Html5Qrcode("reader");
-            
-            const config = { 
-                fps: 10, 
-                qrbox: { width: 250, height: 150 },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.DATA_MATRIX,
-                    Html5QrcodeSupportedFormats.QR_CODE
-                ]
-            };
-
             html5QrCode.start(
                 { facingMode: "environment" },
-                config,
+                { fps: 10, qrbox: { width: 250, height: 150 } },
                 (decodedText) => {
                     processScannedCode(decodedText);
                     playBeep();
@@ -767,7 +727,7 @@
         }
 
         function generateBarcodePreview() {
-            const id = document.getElementById('labelItemSelect5').value; // fallback fix
+            const id = document.getElementById('labelItemSelect').value;
             const item = inventoryMap[id];
             if (!item) return;
 
