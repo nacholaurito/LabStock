@@ -116,15 +116,13 @@
         <!-- 2. PESTAÑA ESCÁNER -->
         <section id="tab-scan" class="tab-content hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                <div class="flex justify-between items-center mb-3">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner Inteligente
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner Inteligente (Abbott, Vircell, Optilite)
                     </h2>
-                    <!-- OPCIONES DE MODO (Descontar, Agregar, Consultar) -->
-                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1">
-                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition">⚡ Descontar</button>
-                        <button onclick="setScanMode('add')" id="modeBtnAdd" class="px-2.5 py-1 rounded-md text-slate-400 font-medium transition">➕ Agregar</button>
-                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="px-2.5 py-1 rounded-md text-slate-400 font-medium transition">🔍 Consultar</button>
+                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs">
+                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="px-3 py-1 rounded-md bg-lab-600 text-white font-medium transition">⚡ Descontar</button>
+                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="px-3 py-1 rounded-md text-slate-400 font-medium transition">🔍 Consultar</button>
                     </div>
                 </div>
 
@@ -240,6 +238,7 @@
             <form id="itemForm" onsubmit="saveItem(event)" class="space-y-3">
                 <input type="hidden" id="editKey" value="">
                 
+                <!-- CAMPO CÓDIGO + BOTÓN ESCANEAR CÁMARA EN MODAL -->
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Código / GTIN del Reactivo</label>
                     <div class="flex gap-2">
@@ -249,6 +248,7 @@
                         </button>
                         <button type="button" onclick="generateRandomCode()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-medium">Generar</button>
                     </div>
+                    <!-- Visor de cámara integrado en el modal (Oculto por defecto) -->
                     <div id="modalReaderContainer" class="hidden aspect-video bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
                         <div id="modal-reader" class="w-full h-full"></div>
                         <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow">Cerrar Cámara</button>
@@ -630,9 +630,8 @@
 
         function setScanMode(mode) {
             scanMode = mode;
-            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
-            document.getElementById('modeBtnAdd').className = mode === 'add' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
-            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
+            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "px-3 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-3 py-1 rounded-md text-slate-400 font-medium transition";
+            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-3 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-3 py-1 rounded-md text-slate-400 font-medium transition";
         }
 
         function startScanner() {
@@ -695,9 +694,6 @@
                 } else {
                     content.innerHTML = `<span class="text-rose-400">⚠ Sin stock disponible para:</span> <b>${item.name}</b>`;
                 }
-            } else if (scanMode === 'add') {
-                adjustStockCloud(item.id, 1);
-                content.innerHTML = `<span class="text-lab-400">✔ Agregado 1 unidad a:</span> <b>${item.name}</b> (Lote: ${item.batch} | Stock actual: ${item.stock + 1})`;
             } else {
                 content.innerHTML = `<span class="text-sky-400">📦 ${item.name}</span><br>Sección: ${item.section} | Stock: <b>${item.stock} u.</b><br>Lote: ${item.batch} | Vto: ${item.expiry}`;
             }
