@@ -142,7 +142,7 @@
                     </button>
                 </div>
 
-                <!-- ENTRADA MANUAL / PISTOLA / TRAMA GS1 -->
+                <!-- ENTRADA MANUAL / PISTOLA -->
                 <div class="mt-4 pt-4 border-t border-slate-700">
                     <label class="block text-xs font-medium text-slate-400 mb-1">Entrada manual / Pistola USB</label>
                     <div class="flex gap-2">
@@ -213,10 +213,9 @@
                     <label class="block text-xs font-medium text-slate-400 mb-1">Código / GTIN del Reactivo</label>
                     <div class="flex gap-2">
                         <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 shadow" title="Escanear DataMatrix con cámara">
+                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 shadow shrink-0 whitespace-nowrap" title="Escanear DataMatrix con cámara">
                             <i class="fa-solid fa-camera"></i> Escanear
                         </button>
-                        <button type="button" onclick="generateRandomCode()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-medium">Generar</button>
                     </div>
                     <div id="modalReaderContainer" class="hidden aspect-square max-w-xs mx-auto bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
                         <div id="modal-reader" class="w-full h-full"></div>
@@ -431,7 +430,7 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 (CORREGIDO PARA LOTE Y VENCIMIENTO) ---
+        // --- PARSER INTELIGENTE GS1 ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
             let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
@@ -440,7 +439,6 @@
             let batch = '';
             let expiry = '';
 
-            // 1. GTIN (AI 01 -> 14 dígitos)
             const matchGtin = clean.match(/01(\d{14})/);
             if (matchGtin) {
                 code = matchGtin[1];
@@ -448,7 +446,6 @@
                 code = clean.substring(0, 14);
             }
 
-            // 2. Expiración (AI 17 -> 6 dígitos AAMMDD)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -458,7 +455,6 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Lote (AI 10 -> captura alfanuméricos, guiones y barras hasta el siguiente AI o fin)
             const matchBatch = clean.match(/10([A-Za-z0-9\-\/\.\_]+?)(?=17\d{6}|$)/);
             if (matchBatch) {
                 batch = matchBatch[1];
@@ -525,7 +521,7 @@
                 if (prefillData.expiry) document.getElementById('itemExpiry').value = prefillData.expiry;
                 document.getElementById('itemName').focus();
             } else {
-                generateRandomCode();
+                document.getElementById('itemCode').value = 'LAB' + Math.floor(100000 + Math.random() * 900000);
             }
 
             document.getElementById('itemModal').classList.remove('hidden');
@@ -552,10 +548,6 @@
             stopModalScanner();
             document.getElementById('itemModal').classList.add('hidden');
             document.getElementById('itemModal').classList.remove('flex');
-        }
-
-        function generateRandomCode() {
-            document.getElementById('itemCode').value = 'LAB' + Math.floor(100000 + Math.random() * 900000);
         }
 
         function saveItem(event) {
