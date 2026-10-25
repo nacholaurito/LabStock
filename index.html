@@ -116,13 +116,15 @@
         <!-- 2. PESTAÑA ESCÁNER -->
         <section id="tab-scan" class="tab-content hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto">
-                <div class="flex justify-between items-center mb-3">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner Inteligente (Abbott, Vircell, Optilite)
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner Inteligente
                     </h2>
-                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs">
-                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="px-3 py-1 rounded-md bg-lab-600 text-white font-medium transition">⚡ Descontar</button>
-                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="px-3 py-1 rounded-md text-slate-400 font-medium transition">🔍 Consultar</button>
+                    <!-- OPCIONES DE MODO (Descontar, Agregar, Consultar) -->
+                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1">
+                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition">⚡ Descontar</button>
+                        <button onclick="setScanMode('add')" id="modeBtnAdd" class="px-2.5 py-1 rounded-md text-slate-400 font-medium transition">➕ Agregar</button>
+                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="px-2.5 py-1 rounded-md text-slate-400 font-medium transition">🔍 Consultar</button>
                     </div>
                 </div>
 
@@ -237,16 +239,33 @@
             </div>
             <form id="itemForm" onsubmit="saveItem(event)" class="space-y-3">
                 <input type="hidden" id="editKey" value="">
+                
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Código / GTIN del Reactivo</label>
                     <div class="flex gap-2">
                         <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 shadow" title="Escanear QR con cámara">
+                            <i class="fa-solid fa-camera"></i> Escanear
+                        </button>
                         <button type="button" onclick="generateRandomCode()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-medium">Generar</button>
                     </div>
+                    <div id="modalReaderContainer" class="hidden aspect-video bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
+                        <div id="modal-reader" class="w-full h-full"></div>
+                        <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow">Cerrar Cámara</button>
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo</label>
-                    <input type="text" id="itemName" required placeholder="Ej: Glucosa GOD-PAP / RHTLV / Virclia" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná o escribí)</label>
+                    <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II, Virclia Parvovirus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    <datalist id="commonReagentsList">
+                        <option value="Architect rHTLV-I/II">
+                        <option value="Virclia Parvovirus IgM Monotest">
+                        <option value="Optilite IgG Kit">
+                        <option value="Glucosa GOD-PAP">
+                        <option value="Colesterol Total">
+                        <option value="Proteína C Reactiva (PCR)">
+                    </datalist>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -287,6 +306,7 @@
         let inventoryMap = {}; 
         let inventoryArray = []; 
         let html5QrCode = null;
+        let modalQrCode = null;
         let scanMode = 'deduct';
         let dbRef = null;
 
@@ -318,6 +338,7 @@
                         ...inventoryMap[key]
                     }));
                     updateCloudStatus('online', 'Conectado a la Nube (En vivo)');
+                    updateReagentDatalist();
                     filterInventory();
                 }, (error) => {
                     updateCloudStatus('error', 'Error de conexión');
@@ -357,10 +378,34 @@
 
         function loadDemoDataLocal() {
             inventoryMap = {
-                'demo1': { code: '00380740011444', name: 'Architect rHTLV-I/II (Demo)', section: 'Inmunología', stock: 5, batch: '79132BE00', expiry: '2026-07-22' }
+                'demo1': { code: '00380740011444', name: 'Architect rHTLV-I/II', section: 'Inmunología', stock: 5, batch: '79132BE00', expiry: '2026-07-22' }
             };
             inventoryArray = Object.keys(inventoryMap).map(key => ({ id: key, ...inventoryMap[key] }));
+            updateReagentDatalist();
             filterInventory();
+        }
+
+        function updateReagentDatalist() {
+            const datalist = document.getElementById('commonReagentsList');
+            const defaultNames = [
+                "Architect rHTLV-I/II",
+                "Virclia Parvovirus IgM Monotest",
+                "Optilite IgG Kit",
+                "Glucosa GOD-PAP",
+                "Colesterol Total",
+                "Proteína C Reactiva (PCR)"
+            ];
+            inventoryArray.forEach(item => {
+                if (item.name && !defaultNames.includes(item.name)) {
+                    defaultNames.push(item.name);
+                }
+            });
+            datalist.innerHTML = '';
+            defaultNames.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                datalist.appendChild(opt);
+            });
         }
 
         function switchTab(tabId) {
@@ -444,22 +489,17 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 (Soporta Abbott, Vircell y Optilite) ---
+        // --- PARSER INTELIGENTE GS1 ---
         function parseSmartQR(rawData) {
             let code = rawData;
             let batch = '';
             let expiry = '';
 
-            // Limpiar paréntesis y barras invertidas que traen las lecturas GS1
             let clean = rawData.replace(/[()\\]/g, '');
 
-            // 1. Extraer GTIN (AI 01 seguido de 14 dígitos)
             const matchGtin = clean.match(/01(\d{14})/);
-            if (matchGtin) {
-                code = matchGtin[1];
-            }
+            if (matchGtin) code = matchGtin[1];
 
-            // 2. Extraer Vencimiento (AI 17 seguido de 6 dígitos YYMMDD)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -469,15 +509,11 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Extraer Lote (AI 10 seguido del valor alfanumérico)
             const idx10 = clean.indexOf('10');
             if (idx10 !== -1) {
                 let sub = clean.substring(idx10 + 2);
-                // Extrae hasta encontrar otro indicador o un espacio/fin de cadena
                 let batchMatch = sub.match(/^([A-Za-z0-9\-]+)/);
-                if (batchMatch) {
-                    batch = batchMatch[1];
-                }
+                if (batchMatch) batch = batchMatch[1];
             } else {
                 const matchBatch = clean.match(/10([A-Za-z0-9\-]+)/);
                 if (matchBatch) batch = matchBatch[1];
@@ -486,10 +522,46 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
+        // --- ESCÁNER DENTRO DEL MODAL ---
+        function startModalScanner() {
+            const container = document.getElementById('modalReaderContainer');
+            container.classList.remove('hidden');
+            modalQrCode = new Html5Qrcode("modal-reader");
+            modalQrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 220, height: 110 } },
+                (decodedText) => {
+                    const parsed = parseSmartQR(decodedText);
+                    if (parsed.code) document.getElementById('itemCode').value = parsed.code;
+                    if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
+                    if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
+                    playBeep();
+                    stopModalScanner();
+                },
+                (error) => {}
+            ).catch(err => {
+                alert("No se pudo iniciar la cámara en el modal.");
+                container.classList.add('hidden');
+            });
+        }
+
+        function stopModalScanner() {
+            if (modalQrCode && modalQrCode.isScanning) {
+                modalQrCode.stop().then(() => {
+                    document.getElementById('modalReaderContainer').classList.add('hidden');
+                }).catch(() => {
+                    document.getElementById('modalReaderContainer').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('modalReaderContainer').classList.add('hidden');
+            }
+        }
+
         function openNewItemModal(prefillData = null) {
             document.getElementById('modalTitle').innerText = "Nuevo Reactivo o Insumo";
             document.getElementById('editKey').value = "";
             document.getElementById('itemForm').reset();
+            stopModalScanner();
             
             if (prefillData) {
                 document.getElementById('itemCode').value = prefillData.code || '';
@@ -507,6 +579,7 @@
         function openEditItemModal(id) {
             const item = inventoryMap[id];
             if (!item) return;
+            stopModalScanner();
             document.getElementById('modalTitle').innerText = "Editar Reactivo";
             document.getElementById('editKey').value = id;
             document.getElementById('itemCode').value = item.code;
@@ -520,6 +593,7 @@
         }
 
         function closeNewItemModal() {
+            stopModalScanner();
             document.getElementById('itemModal').classList.add('hidden');
             document.getElementById('itemModal').classList.remove('flex');
         }
@@ -530,6 +604,7 @@
 
         function saveItem(event) {
             event.preventDefault();
+            stopModalScanner();
             const key = document.getElementById('editKey').value;
             const newItem = {
                 code: document.getElementById('itemCode').value,
@@ -547,6 +622,7 @@
                 const targetKey = key === "" ? 'item_' + Date.now() : key;
                 inventoryMap[targetKey] = newItem;
                 inventoryArray = Object.keys(inventoryMap).map(k => ({ id: k, ...inventoryMap[k] }));
+                updateReagentDatalist();
                 filterInventory();
             }
             closeNewItemModal();
@@ -554,8 +630,9 @@
 
         function setScanMode(mode) {
             scanMode = mode;
-            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "px-3 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-3 py-1 rounded-md text-slate-400 font-medium transition";
-            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-3 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-3 py-1 rounded-md text-slate-400 font-medium transition";
+            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
+            document.getElementById('modeBtnAdd').className = mode === 'add' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
+            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition" : "px-2.5 py-1 rounded-md text-slate-400 font-medium transition";
         }
 
         function startScanner() {
@@ -601,7 +678,6 @@
             const content = document.getElementById('scanResultContent');
             card.classList.remove('hidden');
 
-            // Buscar si ya existe en el inventario por código GTIN o por número de lote
             const item = inventoryArray.find(i => i.code === parsed.code || (parsed.batch && i.batch === parsed.batch));
 
             if (!item) {
@@ -619,6 +695,9 @@
                 } else {
                     content.innerHTML = `<span class="text-rose-400">⚠ Sin stock disponible para:</span> <b>${item.name}</b>`;
                 }
+            } else if (scanMode === 'add') {
+                adjustStockCloud(item.id, 1);
+                content.innerHTML = `<span class="text-lab-400">✔ Agregado 1 unidad a:</span> <b>${item.name}</b> (Lote: ${item.batch} | Stock actual: ${item.stock + 1})`;
             } else {
                 content.innerHTML = `<span class="text-sky-400">📦 ${item.name}</span><br>Sección: ${item.section} | Stock: <b>${item.stock} u.</b><br>Lote: ${item.batch} | Vto: ${item.expiry}`;
             }
