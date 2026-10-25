@@ -144,9 +144,9 @@
 
                 <!-- ENTRADA MANUAL / PISTOLA / TRAMA GS1 -->
                 <div class="mt-4 pt-4 border-t border-slate-700">
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Entrada manual / Pistola USB / Trama GS1</label>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Entrada manual / Pistola USB</label>
                     <div class="flex gap-2">
-                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Ej: (01)003807... o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí código o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                         <button onclick="processScannedCode(document.getElementById('manualScanInput').value); document.getElementById('manualScanInput').value='';" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Procesar</button>
                     </div>
                 </div>
@@ -224,15 +224,6 @@
                     </div>
                 </div>
 
-                <!-- PEGAR TRAMA GS1 EN EL MODAL -->
-                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700 text-xs">
-                    <label class="block text-slate-400 mb-1">Pegá la tira GS1 aquí si querés autocompletar al instante:</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="quickPasteInput" placeholder="(01)... (17)... (10)..." class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-100">
-                        <button type="button" onclick="applyQuickPaste()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white font-medium">Rellenar</button>
-                    </div>
-                </div>
-
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná o escribí)</label>
                     <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II, Virclia Parvovirus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
@@ -289,16 +280,14 @@
         let dbRef = null;
 
         // ==========================================
-        // CONFIGURACIÓN FIJA DE FIREBASE (AUTOMÁTICA)
-        // Reemplaza los textos con los datos de tu consola de Firebase
+        // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com/",
-            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
-            projectId: "labstock-80756"
+            databaseURL: "https://TU-PROYECTO-default-rtdb.firebaseio.com",
+            apiKey: "TU_API_KEY_AQUI",
+            projectId: "TU_PROJECT_ID_AQUI"
         };
 
-        // Inicialización automática al cargar la página
         initFirebase(firebaseConfig);
 
         function initFirebase(config) {
@@ -442,22 +431,24 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 ROBUSTO ---
+        // --- PARSER INTELIGENTE GS1 (CORREGIDO PARA LOTE Y VENCIMIENTO) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
-            let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d]/g, '');
+            let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
 
             let code = '';
             let batch = '';
             let expiry = '';
 
+            // 1. GTIN (AI 01 -> 14 dígitos)
             const matchGtin = clean.match(/01(\d{14})/);
             if (matchGtin) {
                 code = matchGtin[1];
-            } else {
+            } else if (clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
                 code = clean.substring(0, 14);
             }
 
+            // 2. Expiración (AI 17 -> 6 dígitos AAMMDD)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -467,21 +458,13 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            const matchBatch = clean.match(/10([A-Za-z0-9\-\/\.\_]{1,20})/);
+            // 3. Lote (AI 10 -> captura alfanuméricos, guiones y barras hasta el siguiente AI o fin)
+            const matchBatch = clean.match(/10([A-Za-z0-9\-\/\.\_]+?)(?=17\d{6}|$)/);
             if (matchBatch) {
                 batch = matchBatch[1];
             }
 
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
-        }
-
-        function applyQuickPaste() {
-            const val = document.getElementById('quickPasteInput').value;
-            const parsed = parseSmartQR(val);
-            if (parsed.code && parsed.code.length > 5) document.getElementById('itemCode').value = parsed.code;
-            if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
-            if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
-            document.getElementById('quickPasteInput').value = '';
         }
 
         // --- ESCÁNER DENTRO DEL MODAL ---
@@ -696,7 +679,7 @@
         function populateLabelSelect() {
             const select = document.getElementById('labelItemSelect');
             select.innerHTML = '';
-            inventoryArray.each?.((item) => {}) || inventoryArray.forEach((item) => {
+            inventoryArray.forEach((item) => {
                 const opt = document.createElement('option');
                 opt.value = item.id;
                 opt.text = `${item.name} (${item.code})`;
