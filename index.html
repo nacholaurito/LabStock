@@ -282,9 +282,9 @@
         // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
-            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
-            projectId: "labstock-80756"
+            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
+            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
+            projectId: "labstock-80756"
         };
 
         initFirebase(firebaseConfig);
@@ -430,7 +430,7 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 ULTRA ROBUSTO PARA LOTES ---
+        // --- PARSER PRECISO PARA EL LOTE ENTRE (10) Y (240) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
             let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
@@ -457,15 +457,13 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Lote (AI 10 -> Búsqueda avanzada y segura)
-            const idx = clean.indexOf('10');
-            if (idx !== -1) {
-                let sub = clean.substring(idx + 2);
-                // Buscamos si el siguiente AI (como 17 + 6 dígitos) viene inmediatamente después
-                let matchNext17 = sub.match(/17\d{6}/);
-                if (matchNext17) {
-                    let pos = sub.indexOf(matchNext17[0]);
-                    batch = sub.substring(0, pos);
+            // 3. Lote (AI 10 -> Todo lo que está entre '10' y el próximo indicador como '240' o fin)
+            const idx10 = clean.indexOf('10');
+            if (idx10 !== -1) {
+                let sub = clean.substring(idx10 + 2);
+                let idxNext = sub.search(/(240|17|01)/); // Busca el siguiente campo de control GS1
+                if (idxNext !== -1) {
+                    batch = sub.substring(0, idxNext);
                 } else {
                     batch = sub;
                 }
