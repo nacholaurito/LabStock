@@ -498,20 +498,25 @@
             }
         }
 
-        // --- PARSER INTELIGENTE GS1 ESTABLE Y CORREGIDO ---
+        // --- PARSER INTELIGENTE GS1 ROBUSTO (CORREGIDO PARA LOTE / AI 10) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
-            let clean = rawData.trim().replace(/[()\\]/g, '');
+            // Limpia paréntesis, barras y caracteres de control GS1 (FNC1 / \x1D)
+            let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d]/g, '');
 
-            let code = rawData.trim();
+            let code = '';
             let batch = '';
             let expiry = '';
 
-            // 1. Extraer GTIN (AI 01 de 14 dígitos)
+            // 1. Extraer GTIN (AI 01 de 14 dígitos exactos)
             const matchGtin = clean.match(/01(\d{14})/);
-            if (matchGtin) code = matchGtin[1];
+            if (matchGtin) {
+                code = matchGtin[1];
+            } else {
+                code = clean.substring(0, 14);
+            }
 
-            // 2. Extraer Vencimiento (AI 17 de 6 dígitos)
+            // 2. Extraer Vencimiento (AI 17 de 6 dígitos: AAMMDD)
             const matchExpiry = clean.match(/17(\d{6})/);
             if (matchExpiry) {
                 let yy = '20' + matchExpiry[1].substring(0, 2);
@@ -521,8 +526,8 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Extraer Lote (AI 10 - Límite de 12 caracteres para capturar exacto el lote)
-            const matchBatch = clean.match(/10([A-Za-z0-9\-]{1,12})/);
+            // 3. Extraer Lote (AI 10 - Lote/Batch: captura letras, números, guiones, barras y puntos)
+            const matchBatch = clean.match(/10([A-Za-z0-9\-\/\.\_]{1,20})/);
             if (matchBatch) {
                 batch = matchBatch[1];
             }
@@ -548,7 +553,7 @@
             
             const config = { 
                 fps: 10, 
-                qrbox: { width: 220, height: 220 }, // <--- CUADRADO EXACTO PARA DATAMATRIX
+                qrbox: { width: 220, height: 220 },
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.DATA_MATRIX,
                     Html5QrcodeSupportedFormats.QR_CODE,
@@ -671,7 +676,7 @@
             
             const config = { 
                 fps: 10, 
-                qrbox: { width: 250, height: 250 }, // <--- CUADRADO EXACTO PARA DATAMATRIX
+                qrbox: { width: 250, height: 250 },
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.DATA_MATRIX,
                     Html5QrcodeSupportedFormats.QR_CODE,
