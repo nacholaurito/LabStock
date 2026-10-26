@@ -69,17 +69,17 @@
         <!-- 1. PESTAÑA INVENTARIO -->
         <section id="tab-inventory" class="tab-content space-y-3">
             
-            <!-- TARJETAS DE RESUMEN COMPACTAS -->
+            <!-- TARJETAS DE RESUMEN CLICKEABLES (KPIs FILTRADORES) -->
             <div class="grid grid-cols-3 gap-2">
-                <div class="bg-slate-800/90 border border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm">
+                <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
                     <h4 id="kpiTotal" class="text-base font-extrabold text-white mt-0.5">0</h4>
                 </div>
-                <div class="bg-slate-800/90 border border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm">
+                <div onclick="setKpiFilter('expiring')" id="kpiCardExpiring" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-amber-500 transition">
                     <p class="text-[10px] font-bold text-amber-400/90 uppercase tracking-wider">&lt; 30d Vto</p>
                     <h4 id="kpiExpiring" class="text-base font-extrabold text-amber-400 mt-0.5">0</h4>
                 </div>
-                <div class="bg-slate-800/90 border border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm">
+                <div onclick="setKpiFilter('critical')" id="kpiCardCritical" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-rose-500 transition">
                     <p class="text-[10px] font-bold text-rose-400/90 uppercase tracking-wider">Crítico</p>
                     <h4 id="kpiCritical" class="text-base font-extrabold text-rose-400 mt-0.5">0</h4>
                 </div>
@@ -112,12 +112,11 @@
 
             <!-- CONTENEDOR AGRUPADO EN COLUMNAS (ACORDEÓN) -->
             <div id="inventoryGroupedContainer" class="space-y-2.5">
-                <!-- Se llena dinámicamente -->
             </div>
 
             <div id="emptyInventory" class="hidden p-8 text-center text-slate-400">
                 <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-600"></i>
-                <p class="text-sm font-medium">No se encontraron ítems en el inventario</p>
+                <p class="text-sm font-medium">No se encontraron ítems con estos filtros</p>
             </div>
         </section>
 
@@ -261,7 +260,7 @@
         </div>
     </div>
 
-    <!-- MODAL NUEVO / EDITAR ÍTEM -->
+    <!-- MODAL NUEVO / EDITAR ÍTEM (ALINEACIÓN PERFECTA) -->
     <div id="itemModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 max-w-md w-full shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
@@ -273,9 +272,9 @@
                 
                 <div class="space-y-1">
                     <label class="block text-xs font-medium text-slate-400">Código / GTIN</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-9 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
-                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3 h-9 rounded-lg text-xs font-medium flex items-center gap-1 shadow shrink-0">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
+                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3.5 h-10 rounded-lg text-xs font-medium flex items-center gap-1.5 shadow shrink-0">
                             <i class="fa-solid fa-camera"></i> Escanear
                         </button>
                     </div>
@@ -288,8 +287,8 @@
                 <div class="relative space-y-1" id="nameComboboxContainer">
                     <label class="block text-xs font-medium text-slate-400">Nombre del Reactivo</label>
                     <div class="relative">
-                        <input type="text" id="itemName" required autocomplete="off" oninput="handleNameSearchInput(event)" onfocus="handleNameSearchInput(event)" placeholder="Escribí para buscar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 h-9 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
-                        <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-[10px] text-slate-500 pointer-events-none"></i>
+                        <input type="text" id="itemName" required autocomplete="off" oninput="handleNameSearchInput(event)" onfocus="handleNameSearchInput(event)" placeholder="Escribí para buscar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 h-10 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
+                        <i class="fa-solid fa-chevron-down absolute right-3.5 top-3.5 text-[10px] text-slate-500 pointer-events-none"></i>
                     </div>
 
                     <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
@@ -299,7 +298,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">Tipo</label>
-                        <select id="itemType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 h-9 text-xs text-slate-200 focus:outline-none focus:border-lab-500">
+                        <select id="itemType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 h-10 text-xs text-slate-200 focus:outline-none focus:border-lab-500">
                             <option value="Reactivo">Reactivo</option>
                             <option value="Calibrador">Calibrador</option>
                             <option value="Control">Control</option>
@@ -308,7 +307,7 @@
                     </div>
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">Sección</label>
-                        <select id="itemSection" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 h-9 text-xs text-slate-200 focus:outline-none focus:border-lab-500">
+                        <select id="itemSection" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 h-10 text-xs text-slate-200 focus:outline-none focus:border-lab-500">
                             <option value="Química">Química Clínica</option>
                             <option value="Hematología">Hematología</option>
                             <option value="Inmunología">Inmunología</option>
@@ -321,20 +320,20 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">N° de Lote</label>
-                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-9 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">Cantidad / Stock</label>
-                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-9 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                 </div>
 
                 <div class="space-y-1">
                     <label class="block text-xs font-medium text-slate-400">Vencimiento</label>
-                    <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-9 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
+                    <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-lab-500">
                 </div>
 
-                <div class="flex gap-2 pt-1">
+                <div class="flex gap-2 pt-2">
                     <button type="button" onclick="closeNewItemModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white h-10 rounded-lg text-xs font-semibold">Cancelar</button>
                     <button type="submit" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-10 rounded-lg text-xs font-semibold shadow">Guardar en la Nube</button>
                 </div>
@@ -349,6 +348,7 @@
         let catalogMap = {};
         let catalogArray = [];
         let openAccordions = {};
+        let activeKpiFilter = 'all'; // 'all', 'expiring', 'critical'
 
         let html5QrCode = null;
         let modalQrCode = null;
@@ -416,6 +416,17 @@
             } else {
                 indicator.className = "w-2 h-2 rounded-full bg-rose-500";
             }
+        }
+
+        function setKpiFilter(filterType) {
+            activeKpiFilter = activeKpiFilter === filterType ? 'all' : filterType;
+            
+            // Actualizar estilo visual de las tarjetas KPI
+            document.getElementById('kpiCardAll').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'all' ? 'border-lab-500 ring-1 ring-lab-500' : 'border-slate-700/70 hover:border-lab-500'}`;
+            document.getElementById('kpiCardExpiring').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'expiring' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700/70 hover:border-amber-500'}`;
+            document.getElementById('kpiCardCritical').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'critical' ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700/70 hover:border-rose-500'}`;
+
+            filterInventory();
         }
 
         function updateKPIs(data) {
@@ -544,20 +555,36 @@
             if (tabId !== 'scan' && html5QrCode && html5QrCode.isScanning) stopScanner();
         }
 
-        // --- RENDERIZADO AGRUPADO EN COLUMNAS LIMPIAS ---
+        // --- RENDERIZADO AGRUPADO EN COLUMNAS CON FILTRO KPI ---
         function renderInventory(dataToRender = inventoryArray) {
             const container = document.getElementById('inventoryGroupedContainer');
             const emptyState = document.getElementById('emptyInventory');
             container.innerHTML = '';
 
-            if (dataToRender.length === 0) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // Filtrar según KPI activo
+            const kpiFiltered = dataToRender.filter(item => {
+                if (activeKpiFilter === 'expiring') {
+                    if (!item.expiry) return false;
+                    const expDate = new Date(item.expiry + 'T00:00:00');
+                    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                    return diffDays <= 30;
+                } else if (activeKpiFilter === 'critical') {
+                    return item.stock <= 3;
+                }
+                return true;
+            });
+
+            if (kpiFiltered.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
             }
             emptyState.classList.add('hidden');
 
             const grouped = {};
-            dataToRender.forEach(item => {
+            kpiFiltered.forEach(item => {
                 const name = item.name || 'Sin Nombre';
                 if (!grouped[name]) {
                     grouped[name] = {
@@ -572,13 +599,9 @@
                 grouped[name].lots.push(item);
             });
 
-            const today = new Date();
-            today.setHours(0,0,0,0);
-
             Object.keys(grouped).forEach(name => {
                 const group = grouped[name];
                 
-                let mostCriticalExp = null;
                 let minDays = 999999;
                 let hasExpired = false;
 
@@ -589,7 +612,6 @@
                         if (diffDays < 0) hasExpired = true;
                         if (diffDays < minDays) {
                             minDays = diffDays;
-                            mostCriticalExp = lot.expiry;
                         }
                     }
                 });
@@ -631,7 +653,6 @@
 
                 card.innerHTML = `
                     <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-3.5 grid grid-cols-12 gap-2 items-center cursor-pointer hover:bg-slate-750 transition select-none">
-                        <!-- COLUMNA IZQUIERDA (ANCHO PRINCIPAL) -->
                         <div class="col-span-8 space-y-1">
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <span class="text-[10px] px-2 py-0.5 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800/80 font-semibold">${group.type}</span>
@@ -640,7 +661,6 @@
                             <h3 class="text-sm font-bold text-white leading-snug">${group.name}</h3>
                         </div>
                         
-                        <!-- COLUMNA DERECHA (STOCK Y ALERTAS EN COLUMNA ORDENADA) -->
                         <div class="col-span-4 flex flex-col items-end justify-center text-right space-y-1">
                             <div class="flex items-center gap-1.5">
                                 <div class="text-left">
