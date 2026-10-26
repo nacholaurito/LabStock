@@ -430,7 +430,7 @@
             }
         }
 
-        // --- PARSER ABSOLUTO Y EXACTO PARA EL LOTE ENTRE (10) Y (240) ---
+        // --- PARSER ROBUSTO DUAL (SOPORTA FORMATO CON PARÉNTESIS Y CRUDO EN LÍNEA) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
             
@@ -438,53 +438,71 @@
             let batch = '';
             let expiry = '';
 
-            // 1. Extracción precisa basada en los campos entre paréntesis (para formato con espacios o etiquetas)
-            const matchGtin = rawData.match(/\(\s*01\s*\)\s*([0-9]+)/);
-            if (matchGtin) code = matchGtin[1].trim();
+            let clean = rawData.trim().replace(/[\x1d\u001d\u0000-\u001f]/g, '');
 
-            const matchExpiry = rawData.match(/\(\s*17\s*\)\s*(\d{6})/);
-            if (matchExpiry) {
-                let val = matchExpiry[1];
-                let yy = '20' + val.substring(0, 2);
-                let mm = val.substring(2, 4);
-                let dd = val.substring(4, 6);
-                if (dd === '00' || dd > '31') dd = '01';
-                expiry = `${yy}-${mm}-${dd}`;
-            }
+            // 1. Si contiene paréntesis (formato amigable o pegado manual)
+            if (clean.includes('(')) {
+                const matchGtin = clean.match(/\(\s*01\s*\)\s*([0-9]+)/);
+                if (matchGtin) code = matchGtin[1].trim();
 
-            // Captura estricta de lo que está entre (10) y el próximo paréntesis de apertura '(' (como (240))
-            const matchBatch = rawData.match(/\(\s*10\s*\)\s*([^(\()]+)/);
-            if (matchBatch) {
-                batch = matchBatch[1].trim();
-            }
+                const matchExpiry = clean.match(/\(\s*17\s*\)\s*(\d{6})/);
+                if (matchExpiry) {
+                    let val = matchExpiry[1];
+                    let yy = '20' + val.substring(0, 2);
+                    let mm = val.substring(2, 4);
+                    let dd = val.substring(4, 6);
+                    if (dd === '00' || dd > '31') dd = '01';
+                    expiry = `${yy}-${mm}-${dd}`;
+                }
 
-            // 2. Fallback por si el lector devuelve la cadena en crudo (sin espacios ni paréntesis)
+                const matchBatch = clean.match(/\(\s*10\s*\)\s*([^(\()]+)/);
+                if (matchBatch) {
+                    batch = matchBatch[1].trim().split(' ')[0];
+                }
+            } 
+
+            // 2. Si viene en crudo (lector DataMatrix puro sin paréntesis)
             if (!batch || !expiry || !code) {
-                let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
+                let raw = clean.replace(/[()\\]/g, '');
 
-                if (!code) {
-                    const m01 = clean.match(/01(\d+)/);
-                    if (m01) code = m01[1];
+                // Buscar GTIN (AI 01 -> 14 dígitos)
+                let idx01 = raw.indexOf('01');
+                if (idx01 !== -1 && raw.length >= idx01 + 2 + 14) {
+                    code = raw.substring(idx01 + 2, idx01 + 2 + 14);
+                } else if (raw.length >= 14 && /^\d+$/.test(raw.substring(0, 14))) {
+                    code = raw.substring(0, 14);
                 }
 
-                if (!expiry) {
-                    const m17 = clean.match(/17(\d{6})/);
-                    if (m17) {
-                        let val = m17[1];
-                        let yy = '20' + val.substring(0, 2);
-                        let mm = val.substring(2, 4);
-                        let dd = val.substring(4, 6);
-                        if (dd === '00' || dd > '31') dd = '01';
-                        expiry = `${yy}-${mm}-${dd}`;
+                // Buscar Vencimiento (AI 17 -> 6 dígitos YYMMDD)
+                let idx17 = raw.indexOf('17');
+                while (idx17 !== -1) {
+                    if (idx17 + 8 <= raw.length) {
+                        let dateStr = raw.substring(idx17 + 2, idx17 + 8);
+                        if (/^\d{6}$/.test(dateStr)) {
+                            let yy = '20' + dateStr.substring(0, 2);
+                            let mm = dateStr.substring(2, 4);
+                            let dd = dateStr.substring(4, 6);
+                            if (dd === '00' || dd > '31') dd = '01';
+                            expiry = `${yy}-${mm}-${dd}`;
+                            break;
+                        }
                     }
+                    idx17 = raw.indexOf('17', idx17 + 1);
                 }
 
-                if (!batch) {
-                    // Busca '10' seguido del lote y corta antes de '240' o cualquier otro AI
-                    const m10 = clean.match(/10([A-Za-z0-9\-\/\.\_]+?)(?=240|$)/);
-                    if (m10) {
-                        batch = m10[1];
+                // Buscar Lote (AI 10 -> Corta exactamente antes del siguiente AI conocido como 240, 17, etc., o fin de cadena)
+                let idx10 = raw.indexOf('10');
+                while (idx10 !== -1) {
+                    let sub = raw.substring(idx10 + 2);
+                    // Busca dónde empieza el siguiente bloque de control GS1 (ej: 240, 11, 13, 15, 17)
+                    let nextAI = sub.search(/(240|250|11|13|15|17)/);
+                    if (nextAI !== -1) {
+                        batch = sub.substring(0, nextAI);
+                    } else {
+                        batch = sub;
                     }
+                    if (batch.length > 0) break;
+                    idx10 = raw.indexOf('10', idx10 + 1);
                 }
             }
 
