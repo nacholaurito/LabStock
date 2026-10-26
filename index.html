@@ -50,6 +50,9 @@
             <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
                 <i class="fa-solid fa-tags"></i> Etiquetas
             </button>
+            <button onclick="switchTab('settings')" id="pc-btn-settings" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-gear"></i> Ajustes
+            </button>
         </nav>
 
         <div class="flex items-center space-x-2">
@@ -189,10 +192,33 @@
             </div>
         </section>
 
+        <!-- 4. PESTAÑA AJUSTES (CATÁLOGO DE NOMBRES) -->
+        <section id="tab-settings" class="tab-content hidden space-y-4 max-w-xl mx-auto">
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg space-y-4">
+                <h2 class="text-base font-bold flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-gear text-lab-500"></i> Catálogo Maestro de Nombres Homogéneos
+                </h2>
+                <p class="text-xs text-slate-400">Agregá aquí los nombres oficiales de tus reactivos, calibradores, controles o consumibles para que aparezcan disponibles al cargar stock.</p>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="newCatalogName" placeholder="Ej: Architect rHTLV-I/II" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    <button onclick="addCatalogName()" class="bg-lab-600 hover:bg-lab-700 text-white px-4 h-10 rounded-lg text-sm font-semibold shadow flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-plus"></i> Agregar
+                    </button>
+                </div>
+
+                <div class="border border-slate-700 rounded-lg overflow-hidden bg-slate-900 max-h-72 overflow-y-auto">
+                    <ul id="catalogList" class="divide-y divide-slate-800 text-sm">
+                        <!-- Se llena dinámicamente -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 px-6 py-2 flex justify-around items-center z-50 md:hidden">
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 px-4 py-2 flex justify-around items-center z-50 md:hidden">
         <button onclick="switchTab('inventory')" id="mob-btn-inventory" class="flex flex-col items-center text-lab-500 transition">
             <i class="fa-solid fa-boxes-stacked text-lg"></i>
             <span class="text-[10px] font-medium mt-0.5">Inventario</span>
@@ -204,6 +230,10 @@
         <button onclick="switchTab('labels')" id="mob-btn-labels" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition">
             <i class="fa-solid fa-tags text-lg"></i>
             <span class="text-[10px] font-medium mt-0.5">Etiquetas</span>
+        </button>
+        <button onclick="switchTab('settings')" id="mob-btn-settings" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition">
+            <i class="fa-solid fa-gear text-lg"></i>
+            <span class="text-[10px] font-medium mt-0.5">Ajustes</span>
         </button>
     </nav>
 
@@ -256,23 +286,9 @@
 
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná del catálogo o escribí)</label>
-                    <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II, Virclia Parvovirus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     <datalist id="commonReagentsList">
-                        <!-- Catálogo maestro de nombres homogéneos precargados -->
-                        <option value="Architect rHTLV-I/II">
-                        <option value="Architect HIV Ag/Ab Combo">
-                        <option value="Architect HBsAg Qualitative">
-                        <option value="Virclia Parvovirus IgM Monotest">
-                        <option value="Virclia CMV IgG Monotest">
-                        <option value="Optilite IgG Kit">
-                        <option value="Optilite Free Kappa Kit">
-                        <option value="Glucosa GOD-PAP">
-                        <option value="Colesterol Total">
-                        <option value="Triglicéridos">
-                        <option value="Proteína C Reactiva (PCR)">
-                        <option value="Control Multi-Assay Niv. 1">
-                        <option value="Control Multi-Assay Niv. 2">
-                        <option value="Calibrador Chem Chemistry">
+                        <!-- Se llena dinámicamente con los ajustes -->
                     </datalist>
                 </div>
 
@@ -326,10 +342,14 @@
     <script>
         let inventoryMap = {}; 
         let inventoryArray = []; 
+        let catalogMap = {};
+        let catalogArray = [];
+
         let html5QrCode = null;
         let modalQrCode = null;
         let scanMode = 'deduct';
         let dbRef = null;
+        let catalogRef = null;
         
         let activeScanItem = null;
         let activeScanParsed = null;
@@ -351,22 +371,35 @@
                     firebase.initializeApp(config);
                 }
                 dbRef = firebase.database().ref('reactivos');
+                catalogRef = firebase.database().ref('catalogo_nombres');
                 updateCloudStatus('connecting', 'Sincronizando...');
 
+                // Sincronizar Inventario
                 dbRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     inventoryMap = data || {};
                     inventoryArray = Object.keys(inventoryMap).map(key => ({
                         id: key,
-                        type: inventoryMap[key].type || 'Reactivo', // Valor por defecto si es viejo
+                        type: inventoryMap[key].type || 'Reactivo',
                         ...inventoryMap[key]
                     }));
                     updateCloudStatus('online', 'Conectado a la Nube (En vivo)');
-                    updateReagentDatalist();
                     filterInventory();
                 }, (error) => {
                     updateCloudStatus('error', 'Error de conexión');
                 });
+
+                // Sincronizar Catálogo de Nombres
+                catalogRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    catalogMap = data || {};
+                    catalogArray = Object.keys(catalogMap).map(key => ({
+                        id: key,
+                        name: catalogMap[key].name
+                    }));
+                    updateCatalogUI();
+                });
+
             } catch (e) {
                 updateCloudStatus('error', 'Credenciales inválidas');
             }
@@ -385,33 +418,77 @@
             }
         }
 
-        function updateReagentDatalist() {
+        // --- GESTIÓN DEL CATÁLOGO DE NOMBRES ---
+        function addCatalogName() {
+            const input = document.getElementById('newCatalogName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            // Evitar duplicados exactos
+            const exists = catalogArray.some(item => item.name.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                alert('Este nombre ya existe en el catálogo.');
+                return;
+            }
+
+            if (catalogRef) {
+                catalogRef.push({ name: name });
+                input.value = '';
+            }
+        }
+
+        function deleteCatalogName(id) {
+            if (confirm('¿Eliminar este nombre del catálogo?')) {
+                if (catalogRef) catalogRef.child(id).remove();
+            }
+        }
+
+        function updateCatalogUI() {
             const datalist = document.getElementById('commonReagentsList');
-            const defaultNames = [
-                "Architect rHTLV-I/II", "Architect HIV Ag/Ab Combo", "Architect HBsAg Qualitative",
-                "Virclia Parvovirus IgM Monotest", "Virclia CMV IgG Monotest", "Optilite IgG Kit",
-                "Optilite Free Kappa Kit", "Glucosa GOD-PAP", "Colesterol Total", "Triglicéridos",
-                "Proteína C Reactiva (PCR)", "Control Multi-Assay Niv. 1", "Control Multi-Assay Niv. 2",
-                "Calibrador Chem Chemistry"
-            ];
-            inventoryArray.forEach(item => {
-                if (item.name && !defaultNames.includes(item.name)) {
-                    defaultNames.push(item.name);
-                }
-            });
+            const listContainer = document.getElementById('catalogList');
+            
+            // Valores por defecto si está vacío
+            let names = catalogArray.map(c => c.name);
+            if (names.length === 0) {
+                names = [
+                    "Architect rHTLV-I/II", "Architect HIV Ag/Ab Combo", "Architect HBsAg Qualitative",
+                    "Virclia Parvovirus IgM Monotest", "Virclia CMV IgG Monotest", "Optilite IgG Kit",
+                    "Glucosa GOD-PAP", "Colesterol Total", "Proteína C Reactiva (PCR)"
+                ];
+            }
+
+            // Llenar datalist del formulario
             datalist.innerHTML = '';
-            defaultNames.forEach(name => {
+            names.forEach(name => {
                 const opt = document.createElement('option');
                 opt.value = name;
                 datalist.appendChild(opt);
             });
+
+            // Llenar lista visual en la pestaña Ajustes
+            if (listContainer) {
+                listContainer.innerHTML = '';
+                if (catalogArray.length === 0) {
+                    listContainer.innerHTML = `<li class="p-4 text-center text-slate-500 text-xs">No hay nombres personalizados. Usando catálogo base predeterminado.</li>`;
+                    return;
+                }
+                catalogArray.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex justify-between items-center p-3 hover:bg-slate-800 transition";
+                    li.innerHTML = `
+                        <span class="text-slate-200 font-medium">${item.name}</span>
+                        <button onclick="deleteCatalogName('${item.id}')" class="text-rose-400 hover:text-rose-300 p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                    `;
+                    listContainer.appendChild(li);
+                });
+            }
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
 
-            ['inventory', 'scan', 'labels'].forEach(id => {
+            ['inventory', 'scan', 'labels', 'settings'].forEach(id => {
                 const pcBtn = document.getElementById(`pc-btn-${id}`);
                 const mobBtn = document.getElementById(`mob-btn-${id}`);
                 if (pcBtn) {
