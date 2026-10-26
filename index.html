@@ -69,10 +69,10 @@
         <!-- 1. PESTAÑA INVENTARIO -->
         <section id="tab-inventory" class="tab-content space-y-3">
             
-            <!-- TARJETAS DE RESUMEN COMPACTAS EN 3 COLUMNAS -->
+            <!-- TARJETAS DE RESUMEN COMPACTAS -->
             <div class="grid grid-cols-3 gap-2">
                 <div class="bg-slate-800/90 border border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
                     <h4 id="kpiTotal" class="text-base font-extrabold text-white mt-0.5">0</h4>
                 </div>
                 <div class="bg-slate-800/90 border border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm">
@@ -110,30 +110,9 @@
                 </div>
             </div>
 
-            <!-- VISTA EN TARJETAS PARA MÓVIL (block md:hidden) -->
-            <div id="mobileCardsContainer" class="space-y-2.5 block md:hidden">
+            <!-- CONTENEDOR AGRUPADO POR ACORDEÓN (VISTA HÍBRIDA) -->
+            <div id="inventoryGroupedContainer" class="space-y-2.5">
                 <!-- Se llena dinámicamente -->
-            </div>
-
-            <!-- VISTA TABLA PARA ESCRITORIO (hidden md:block) -->
-            <div class="hidden md:block bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-900/60 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                                <th class="p-3.5 font-semibold">Código / Lote</th>
-                                <th class="p-3.5 font-semibold">Reactivo / Insumo</th>
-                                <th class="p-3.5 font-semibold">Tipo</th>
-                                <th class="p-3.5 font-semibold">Sección</th>
-                                <th class="p-3.5 font-semibold">Stock</th>
-                                <th class="p-3.5 font-semibold">Vencimiento</th>
-                                <th class="p-3.5 font-semibold text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTableBody" class="divide-y divide-slate-700/70 text-sm">
-                        </tbody>
-                    </table>
-                </div>
             </div>
 
             <div id="emptyInventory" class="hidden p-8 text-center text-slate-400">
@@ -156,7 +135,6 @@
                     </div>
                 </div>
 
-                <!-- Visor de Cámara -->
                 <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
                     <div id="reader" class="w-full h-full"></div>
                     <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
@@ -174,7 +152,6 @@
                     </button>
                 </div>
 
-                <!-- ENTRADA MANUAL / PISTOLA -->
                 <div class="pt-3 border-t border-slate-700 space-y-1">
                     <label class="block text-xs font-medium text-slate-400">Entrada manual / Pistola USB</label>
                     <div class="flex gap-2">
@@ -230,7 +207,6 @@
 
                 <div class="border border-slate-700 rounded-lg overflow-hidden bg-slate-900 max-h-64 overflow-y-auto">
                     <ul id="catalogList" class="divide-y divide-slate-800 text-xs">
-                        <!-- Se llena dinámicamente -->
                     </ul>
                 </div>
             </div>
@@ -271,7 +247,6 @@
                 <button onclick="closeScanActionModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div id="scanModalBody" class="space-y-1.5 text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700">
-                <!-- Se llena dinámicamente -->
             </div>
             <div id="qtyContainer" class="space-y-1">
                 <label id="qtyLabel" class="block text-xs font-medium text-slate-400">Cantidad a agregar</label>
@@ -318,7 +293,6 @@
                     </div>
 
                     <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
-                        <!-- Se llena dinámicamente -->
                     </div>
                 </div>
 
@@ -374,6 +348,7 @@
         let inventoryArray = []; 
         let catalogMap = {};
         let catalogArray = [];
+        let openAccordions = {}; // Estado de los acordeones abiertos
 
         let html5QrCode = null;
         let modalQrCode = null;
@@ -384,9 +359,6 @@
         let activeScanItem = null;
         let activeScanParsed = null;
 
-        // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (Tus datos)
-        // ==========================================
         const firebaseConfig = {
             databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
             apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
@@ -404,7 +376,6 @@
                 catalogRef = firebase.database().ref('catalogo_nombres');
                 updateCloudStatus('connecting', 'Sincronizando...');
 
-                // Sincronizar Inventario
                 dbRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     inventoryMap = data || {};
@@ -419,7 +390,6 @@
                     updateCloudStatus('error', 'Error');
                 });
 
-                // Sincronizar Catálogo
                 catalogRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     catalogMap = data || {};
@@ -574,13 +544,11 @@
             if (tabId !== 'scan' && html5QrCode && html5QrCode.isScanning) stopScanner();
         }
 
+        // --- RENDERIZADO AGRUPADO (ACORDEÓN HÍBRIDO) ---
         function renderInventory(dataToRender = inventoryArray) {
-            const tbody = document.getElementById('inventoryTableBody');
-            const mobileContainer = document.getElementById('mobileCardsContainer');
+            const container = document.getElementById('inventoryGroupedContainer');
             const emptyState = document.getElementById('emptyInventory');
-
-            tbody.innerHTML = '';
-            mobileContainer.innerHTML = '';
+            container.innerHTML = '';
 
             if (dataToRender.length === 0) {
                 emptyState.classList.remove('hidden');
@@ -588,80 +556,109 @@
             }
             emptyState.classList.add('hidden');
 
+            // Agrupar ítems por nombre exacto
+            const grouped = {};
+            dataToRender.forEach(item => {
+                const name = item.name || 'Sin Nombre';
+                if (!grouped[name]) {
+                    grouped[name] = {
+                        name: name,
+                        type: item.type || 'Reactivo',
+                        section: item.section || 'Química',
+                        totalStock: 0,
+                        lots: []
+                    };
+                }
+                grouped[name].totalStock += (parseInt(item.stock) || 0);
+                grouped[name].lots.push(item);
+            });
+
             const today = new Date();
             today.setHours(0,0,0,0);
 
-            dataToRender.forEach((item) => {
-                const itemType = item.type || 'Reactivo';
-                let typeBadgeColor = "bg-emerald-950 text-emerald-400 border-emerald-800/80";
-                if (itemType === 'Calibrador') typeBadgeColor = "bg-sky-950 text-sky-400 border-sky-800/80";
-                if (itemType === 'Control') typeBadgeColor = "bg-amber-950 text-amber-400 border-amber-800/80";
-                if (itemType === 'Consumible') typeBadgeColor = "bg-purple-950 text-purple-400 border-purple-800/80";
+            Object.keys(grouped).forEach(name => {
+                const group = grouped[name];
+                
+                // Encontrar el vencimiento más crítico (el más próximo) de todos sus lotes
+                let mostCriticalExp = null;
+                let minDays = 999999;
+                let hasExpired = false;
 
-                let expiryBadge = `<span class="text-xs text-slate-300">${item.expiry}</span>`;
-                if (item.expiry) {
-                    const expDate = new Date(item.expiry + 'T00:00:00');
-                    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-                    if (diffDays < 0) {
-                        expiryBadge = `<span class="bg-rose-950 text-rose-400 border border-rose-800 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 w-fit"><i class="fa-solid fa-circle-exclamation"></i> Vencido</span>`;
-                    } else if (diffDays <= 30) {
-                        expiryBadge = `<span class="bg-amber-950 text-amber-400 border border-amber-800 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 w-fit"><i class="fa-solid fa-triangle-exclamation"></i> Vence en ${diffDays}d</span>`;
+                group.lots.forEach(lot => {
+                    if (lot.expiry) {
+                        const expDate = new Date(lot.expiry + 'T00:00:00');
+                        const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                        if (diffDays < 0) hasExpired = true;
+                        if (diffDays < minDays) {
+                            minDays = diffDays;
+                            mostCriticalExp = lot.expiry;
+                        }
                     }
+                });
+
+                // Badge general para el encabezado del acordeón
+                let headerBadge = `<span class="text-xs text-slate-400">${group.lots.length} lote(s)</span>`;
+                if (hasExpired) {
+                    headerBadge = `<span class="bg-rose-950 text-rose-400 border border-rose-800 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> Vencido</span>`;
+                } else if (minDays <= 30) {
+                    headerBadge = `<span class="bg-amber-950 text-amber-400 border border-amber-800 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Vence en ${minDays}d</span>`;
                 }
 
-                // 1. RENDER MÓVIL (TARJETAS COMPACTAS)
+                const isOpen = openAccordions[name] || false;
                 const card = document.createElement('div');
-                card.className = "bg-slate-800 border border-slate-700/80 rounded-xl p-3 shadow-md space-y-2.5";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start gap-2">
-                        <div class="space-y-0.5">
-                            <span class="text-[10px] px-2 py-0.5 rounded-full border ${typeBadgeColor} font-semibold">${itemType}</span>
-                            <h3 class="text-sm font-bold text-white leading-tight mt-1">${item.name}</h3>
+                card.className = "bg-slate-800 border border-slate-700/80 rounded-xl overflow-hidden shadow-md";
+                
+                let lotsHtml = '';
+                group.lots.forEach(lot => {
+                    lotsHtml += `
+                        <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <div class="space-y-0.5 text-xs">
+                                <div class="text-white font-semibold">Lote: <span class="font-mono text-lab-400">${lot.batch}</span> <span class="text-[10px] text-slate-500 font-normal">(Cod: ${lot.code})</span></div>
+                                <div class="text-slate-400 text-[11px]">Vto: ${lot.expiry}</div>
+                            </div>
+                            <div class="flex items-center justify-between w-full sm:w-auto gap-2">
+                                <span class="font-bold text-xs ${lot.stock <= 3 ? 'text-rose-400 bg-rose-950 px-2 py-0.5 rounded border border-rose-900' : 'text-slate-200'}">${lot.stock} u.</span>
+                                <div class="flex gap-1">
+                                    <button onclick="adjustStockCloud('${lot.id}', 1)" class="w-7 h-7 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs flex items-center justify-center"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                                    <button onclick="adjustStockCloud('${lot.id}', -1)" class="w-7 h-7 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                                    <button onclick="openEditItemModal('${lot.id}')" class="w-7 h-7 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded text-xs flex items-center justify-center"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="deleteItemCloud('${lot.id}')" class="w-7 h-7 bg-slate-700 hover:bg-rose-950 text-rose-400 rounded text-xs flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-right shrink-0">
-                            <span class="text-xs font-bold ${item.stock <= 3 ? 'text-rose-400 bg-rose-950/80 px-2 py-1 rounded border border-rose-800' : 'text-slate-100 bg-slate-900 px-2 py-1 rounded border border-slate-700'}">${item.stock} u.</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-700/60 pt-2">
-                        <div>
-                            <div>Lote: <span class="font-mono text-slate-200">${item.batch}</span></div>
-                            <div class="text-[10px] text-slate-500">${item.section}</div>
-                        </div>
-                        <div>${expiryBadge}</div>
-                    </div>
-                    <div class="flex gap-1.5 pt-1 border-t border-slate-700/40">
-                        <button onclick="adjustStockCloud('${item.id}', 1)" class="flex-1 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white h-8 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition"><i class="fa-solid fa-plus text-[10px]"></i> Sumar</button>
-                        <button onclick="adjustStockCloud('${item.id}', -1)" class="flex-1 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white h-8 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition"><i class="fa-solid fa-minus text-[10px]"></i> Restar</button>
-                        <button onclick="openEditItemModal('${item.id}')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded-lg text-xs flex items-center justify-center shrink-0"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteItemCloud('${item.id}')" class="w-8 h-8 bg-slate-700 hover:bg-rose-950 text-rose-400 rounded-lg text-xs flex items-center justify-center shrink-0"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                `;
-                mobileContainer.appendChild(card);
+                    `;
+                });
 
-                // 2. RENDER ESCRITORIO (TABLA)
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-750 transition border-b border-slate-700/50";
-                tr.innerHTML = `
-                    <td class="p-3.5">
-                        <span class="font-mono text-xs bg-slate-900 px-2 py-1 rounded text-lab-400 border border-slate-700">${item.code}</span>
-                        <div class="text-[11px] text-slate-400 mt-1">Lote: ${item.batch}</div>
-                    </td>
-                    <td class="p-3.5 font-medium text-white">${item.name}</td>
-                    <td class="p-3.5"><span class="text-xs px-2.5 py-1 rounded-full border ${typeBadgeColor}">${itemType}</span></td>
-                    <td class="p-3.5"><span class="bg-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-full">${item.section}</span></td>
-                    <td class="p-3.5"><span class="font-bold text-base ${item.stock <= 3 ? 'text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-900' : 'text-slate-100'}">${item.stock} u.</span></td>
-                    <td class="p-3.5">${expiryBadge}</td>
-                    <td class="p-3.5 text-center">
-                        <div class="flex items-center justify-center gap-1">
-                            <button onclick="adjustStockCloud('${item.id}', 1)" title="Sumar 1" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs text-white flex items-center justify-center transition"><i class="fa-solid fa-plus"></i></button>
-                            <button onclick="adjustStockCloud('${item.id}', -1)" title="Restar 1" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs text-white flex items-center justify-center transition"><i class="fa-solid fa-minus"></i></button>
-                            <button onclick="openEditItemModal('${item.id}')" title="Editar" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs text-sky-400 flex items-center justify-center transition"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteItemCloud('${item.id}')" title="Eliminar" class="w-8 h-8 bg-slate-700 hover:bg-rose-950 rounded-lg text-xs text-rose-400 flex items-center justify-center transition"><i class="fa-solid fa-trash"></i></button>
+                card.innerHTML = `
+                    <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-750 transition select-none">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] px-2 py-0.5 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800/80 font-semibold">${group.type}</span>
+                                <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${group.section}</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-white leading-tight">${group.name}</h3>
                         </div>
-                    </td>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">Stock Total</div>
+                                <div class="text-sm font-extrabold text-white">${group.totalStock} u.</div>
+                            </div>
+                            <div>${headerBadge}</div>
+                            <i class="fa-solid fa-chevron-${isOpen ? 'up' : 'down'} text-xs text-slate-400 transition-transform"></i>
+                        </div>
+                    </div>
+                    <div id="acc-${CSS.escape(name)}" class="${isOpen ? '' : 'hidden'} p-3 bg-slate-900/50 border-t border-slate-700/60 space-y-2">
+                        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Lotes Registrados:</p>
+                        ${lotsHtml}
+                    </div>
                 `;
-                tbody.appendChild(tr);
+                container.appendChild(card);
             });
+        }
+
+        function toggleAccordion(name) {
+            openAccordions[name] = !openAccordions[name];
+            filterInventory();
         }
 
         function filterInventory() {
@@ -688,7 +685,7 @@
         }
 
         function deleteItemCloud(id) {
-            if (confirm('¿Eliminar este ítem?')) {
+            if (confirm('¿Eliminar este lote?')) {
                 if (dbRef) dbRef.child(id).remove();
             }
         }
@@ -788,7 +785,7 @@
             const item = inventoryMap[id];
             if (!item) return;
             stopModalScanner();
-            document.getElementById('modalTitle').innerText = "Editar Reactivo";
+            document.getElementById('modalTitle').innerText = "Editar Lote";
             document.getElementById('editKey').value = id;
             document.getElementById('itemCode').value = item.code;
             document.getElementById('itemName').value = item.name;
@@ -833,7 +830,7 @@
             scanMode = mode;
             document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "flex-1 sm:flex-none px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-2.5 py-1 rounded-md text-slate-400 font-medium transition text-xs";
             document.getElementById('modeBtnAdd').className = mode === 'add' ? "flex-1 sm:flex-none px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-2.5 py-1 rounded-md text-slate-400 font-medium transition text-xs";
-            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-2.5 py-1 rounded-md text-slate-400 font-medium transition text-xs" : "flex-1 sm:flex-none px-2.5 py-1 rounded-md text-slate-400 font-medium transition text-xs";
+            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-2.5 py-1 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-2.5 py-1 rounded-md text-slate-400 font-medium transition text-xs";
         }
 
         function startScanner() {
@@ -966,7 +963,7 @@
             inventoryArray.forEach((item) => {
                 const opt = document.createElement('option');
                 opt.value = item.id;
-                opt.text = `${item.name} (${item.code})`;
+                opt.text = `${item.name} (Lote: ${item.batch})`;
                 select.appendChild(opt);
             });
             generateBarcodePreview();
