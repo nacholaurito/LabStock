@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LudovicApp Stock</title>
+    <title>LabStock Cloud - Control de Reactivos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -26,7 +26,7 @@
         }
     </script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen pb-20 md:pb-6 font-sans antialiased selection:bg-lab-500 selection:text-white">
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-20 md:pb-6 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
     <!-- HEADER / BARRA SUPERIOR -->
     <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40 px-4 py-3 flex justify-between items-center shadow-md">
@@ -35,8 +35,8 @@
                 <i class="fa-solid fa-cloud text-xl"></i>
             </div>
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-white leading-tight">LudovicApp Stock</h1>
-                <p class="text-xs text-slate-400">Control de stock de insumos</p>
+                <h1 class="text-lg font-bold tracking-tight text-white leading-tight">LabStock Cloud</h1>
+                <p class="text-xs text-slate-400">Abbott, Vircell & Binding Site Ready</p>
             </div>
         </div>
 
@@ -284,12 +284,18 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná del catálogo o escribí)</label>
-                    <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                    <datalist id="commonReagentsList">
-                        <!-- Se llena dinámicamente con los ajustes -->
-                    </datalist>
+                <!-- CAMPO NOMBRE CON AUTOCOMPLETADO DESPLEGABLE -->
+                <div class="relative" id="nameComboboxContainer">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Escribí para buscar)</label>
+                    <div class="relative">
+                        <input type="text" id="itemName" required autocomplete="off" oninput="handleNameSearchInput(event)" onfocus="handleNameSearchInput(event)" placeholder="Escribí 1 o 2 letras para buscar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-xs text-slate-500 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Lista flotante de sugerencias -->
+                    <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-800">
+                        <!-- Se llena dinámicamente -->
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -355,7 +361,7 @@
         let activeScanParsed = null;
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (Tus datos)
+        // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
             databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
@@ -418,13 +424,82 @@
             }
         }
 
-        // --- GESTIÓN DEL CATÁLOGO DE NOMBRES ---
+        // --- BÚSQUEDA Y AUTOCOMPLETADO INTERACTIVO DESPLEGABLE ---
+        function handleNameSearchInput(event) {
+            const input = document.getElementById('itemName');
+            const dropdown = document.getElementById('nameSuggestionsDropdown');
+            const query = input.value.trim().toLowerCase();
+
+            // Si hay menos de 1 carácter, ocultar desplegable
+            if (query.length < 1) {
+                dropdown.classList.add('hidden');
+                dropdown.innerHTML = '';
+                return;
+            }
+
+            // Unir nombres del catálogo e inventario para buscar coincidencias
+            let allNames = catalogArray.map(c => c.name);
+            inventoryArray.forEach(i => {
+                if (i.name && !allNames.includes(i.name)) allNames.push(i.name);
+            });
+
+            // Si está vacío, usar predeterminados
+            if (allNames.length === 0) {
+                allNames = [
+                    "Architect rHTLV-I/II", "Architect HIV Ag/Ab Combo", "Architect HBsAg Qualitative",
+                    "Virclia Parvovirus IgM Monotest", "Virclia CMV IgG Monotest", "Optilite IgG Kit",
+                    "Glucosa GOD-PAP", "Colesterol Total", "Proteína C Reactiva (PCR)"
+                ];
+            }
+
+            const matches = allNames.filter(n => n.toLowerCase().includes(query));
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = `
+                    <div class="p-3 text-xs text-slate-400">
+                        No hay coincidencias. Se usará: <b class="text-white">"${input.value}"</b>
+                    </div>
+                `;
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            dropdown.innerHTML = '';
+            matches.forEach(name => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "px-3.5 py-2.5 text-xs text-slate-200 hover:bg-slate-800 hover:text-lab-400 cursor-pointer font-medium transition flex items-center justify-between";
+                
+                // Resaltar coincidencia
+                const regEx = new RegExp(`(${query})`, 'gi');
+                const highlighted = name.replace(regEx, `<span class="text-lab-400 font-bold">$1</span>`);
+
+                itemDiv.innerHTML = `<span>${highlighted}</span> <i class="fa-solid fa-arrow-turn-down-left text-[10px] text-slate-600"></i>`;
+                itemDiv.onclick = () => selectNameFromDropdown(name);
+                dropdown.appendChild(itemDiv);
+            });
+
+            dropdown.classList.remove('hidden');
+        }
+
+        function selectNameFromDropdown(name) {
+            document.getElementById('itemName').value = name;
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
+        }
+
+        function closeNameDropdownOutside(event) {
+            const container = document.getElementById('nameComboboxContainer');
+            if (container && !container.contains(event.target)) {
+                const dropdown = document.getElementById('nameSuggestionsDropdown');
+                if (dropdown) dropdown.classList.add('hidden');
+            }
+        }
+
+        // --- GESTIÓN DEL CATÁLOGO DE NOMBRES EN AJUSTES ---
         function addCatalogName() {
             const input = document.getElementById('newCatalogName');
             const name = input.value.trim();
             if (!name) return;
 
-            // Evitar duplicados exactos
             const exists = catalogArray.some(item => item.name.toLowerCase() === name.toLowerCase());
             if (exists) {
                 alert('Este nombre ya existe en el catálogo.');
@@ -444,32 +519,11 @@
         }
 
         function updateCatalogUI() {
-            const datalist = document.getElementById('commonReagentsList');
             const listContainer = document.getElementById('catalogList');
-            
-            // Valores por defecto si está vacío
-            let names = catalogArray.map(c => c.name);
-            if (names.length === 0) {
-                names = [
-                    "Architect rHTLV-I/II", "Architect HIV Ag/Ab Combo", "Architect HBsAg Qualitative",
-                    "Virclia Parvovirus IgM Monotest", "Virclia CMV IgG Monotest", "Optilite IgG Kit",
-                    "Glucosa GOD-PAP", "Colesterol Total", "Proteína C Reactiva (PCR)"
-                ];
-            }
-
-            // Llenar datalist del formulario
-            datalist.innerHTML = '';
-            names.forEach(name => {
-                const opt = document.createElement('option');
-                opt.value = name;
-                datalist.appendChild(opt);
-            });
-
-            // Llenar lista visual en la pestaña Ajustes
             if (listContainer) {
                 listContainer.innerHTML = '';
                 if (catalogArray.length === 0) {
-                    listContainer.innerHTML = `<li class="p-4 text-center text-slate-500 text-xs">No hay nombres personalizados. Usando catálogo base predeterminado.</li>`;
+                    listContainer.innerHTML = `<li class="p-4 text-center text-slate-500 text-xs">No hay nombres personalizados. Usando catálogo base.</li>`;
                     return;
                 }
                 catalogArray.forEach(item => {
@@ -708,6 +762,7 @@
             document.getElementById('modalTitle').innerText = "Nuevo Reactivo o Insumo";
             document.getElementById('editKey').value = "";
             document.getElementById('itemForm').reset();
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
             stopModalScanner();
             
             if (prefillData) {
@@ -736,12 +791,14 @@
             document.getElementById('itemStock').value = item.stock;
             document.getElementById('itemBatch').value = item.batch;
             document.getElementById('itemExpiry').value = item.expiry;
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
             document.getElementById('itemModal').classList.remove('hidden');
             document.getElementById('itemModal').classList.add('flex');
         }
 
         function closeNewItemModal() {
             stopModalScanner();
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
             document.getElementById('itemModal').classList.add('hidden');
             document.getElementById('itemModal').classList.remove('flex');
         }
