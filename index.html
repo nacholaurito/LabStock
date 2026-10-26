@@ -282,9 +282,9 @@
         // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
-            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
-            projectId: "labstock-80756"
+            databaseURL: "https://TU-PROYECTO-default-rtdb.firebaseio.com",
+            apiKey: "TU_API_KEY_AQUI",
+            projectId: "TU_PROJECT_ID_AQUI"
         };
 
         initFirebase(firebaseConfig);
@@ -430,44 +430,73 @@
             }
         }
 
-        // --- PARSER CORREGIDO PARA EXTRAER EL LOTE ENTRE (10) Y (240) ---
+        // --- PARSER BLINDADO PARA LOTE EXACTO ENTRE (10) Y (240) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
-            let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
-
+            
             let code = '';
             let batch = '';
             let expiry = '';
 
-            // 1. GTIN (AI 01 -> 14 dígitos)
-            const matchGtin = clean.match(/01(\d{14})/);
-            if (matchGtin) {
-                code = matchGtin[1];
-            } else if (clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
-                code = clean.substring(0, 14);
+            // 1. Si el texto contiene los paréntesis (ej: pegado manual o formato formateado)
+            if (rawData.includes('10')) {
+                // Captura exacta de lo que está estrictamente entre (10) y el próximo paréntesis '(' o fin de línea
+                const matchBatchParen = rawData.match(/\(\s*10\s*\)\s*([A-Za-z0-9\-\/\.\_]+)/);
+                if (matchBatchParen) {
+                    batch = matchBatchParen[1].trim();
+                }
+
+                const matchExpiryParen = rawData.match(/\(\s*17\s*\)\s*(\d{6})/);
+                if (matchExpiryParen) {
+                    let val = matchExpiryParen[1];
+                    let yy = '20' + val.substring(0, 2);
+                    let mm = val.substring(2, 4);
+                    let dd = val.substring(4, 6);
+                    if (dd === '00' || dd > '31') dd = '01';
+                    expiry = `${yy}-${mm}-${dd}`;
+                }
+
+                const matchGtinParen = rawData.match(/\(\s*01\s*\)\s*([0-9]+)/);
+                if (matchGtinParen) {
+                    code = matchGtinParen[1].trim();
+                }
             }
 
-            // 2. Expiración (AI 17 -> 6 dígitos AAMMDD)
-            const matchExpiry = clean.match(/17(\d{6})/);
-            if (matchExpiry) {
-                let yy = '20' + matchExpiry[1].substring(0, 2);
-                let mm = matchExpiry[1].substring(2, 4);
-                let dd = matchExpiry[1].substring(4, 6);
-                if (dd === '00' || dd > '31') dd = '01';
-                expiry = `${yy}-${mm}-${dd}`;
-            }
+            // 2. Fallback por si la cámara lee en crudo (sin paréntesis)
+            if (!batch || !expiry || !code) {
+                let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
 
-            // 3. Lote (AI 10 -> Toma lo que está entre '10' y el próximo AI como '240', '17', '01' o fin de cadena)
-            const idx10 = clean.indexOf('10');
-            if (idx10 !== -1) {
-                let sub = clean.substring(idx10 + 2);
-                // Busca de forma estricta el límite donde arranca el siguiente identificador (ej: 240, 17, 01)
-                const matchNextAI = sub.match(/(240|17\d{6}|01\d{14})/);
-                if (matchNextAI) {
-                    let pos = sub.indexOf(matchNextAI[0]);
-                    batch = sub.substring(0, pos);
-                } else {
-                    batch = sub;
+                if (!code) {
+                    const matchGtin = clean.match(/01(\d{14})/);
+                    if (matchGtin) code = matchGtin[1];
+                    else code = clean.substring(0, 14);
+                }
+
+                if (!expiry) {
+                    const matchExpiry = clean.match(/17(\d{6})/);
+                    if (matchExpiry) {
+                        let val = matchExpiry[1];
+                        let yy = '20' + val.substring(0, 2);
+                        let mm = val.substring(2, 4);
+                        let dd = val.substring(4, 6);
+                        if (dd === '00' || dd > '31') dd = '01';
+                        expiry = `${yy}-${mm}-${dd}`;
+                    }
+                }
+
+                if (!batch) {
+                    const idx10 = clean.indexOf('10');
+                    if (idx10 !== -1) {
+                        let sub = clean.substring(idx10 + 2);
+                        // Cortar antes de cualquier etiqueta GS1 común como 240, 17, 01
+                        const matchNextAI = sub.match(/(240|17\d{6}|01\d{14})/);
+                        if (matchNextAI) {
+                            let pos = sub.indexOf(matchNextAI[0]);
+                            batch = sub.substring(0, pos);
+                        } else {
+                            batch = sub;
+                        }
+                    }
                 }
             }
 
