@@ -152,7 +152,7 @@
                 </div>
 
                 <div id="scanResultCard" class="hidden mt-4 p-3.5 bg-slate-900 rounded-lg border border-slate-700">
-                    <p class="text-xs text-slate-400">Resultado escaneado:</p>
+                    <p class="text-xs text-slate-400">Último escaneo procesado:</p>
                     <div id="scanResultContent" class="text-sm font-medium text-slate-200 mt-1"></div>
                 </div>
             </div>
@@ -198,6 +198,29 @@
             <span class="text-[10px] font-medium mt-0.5">Etiquetas</span>
         </button>
     </nav>
+
+    <!-- VENTANA MODAL: CONFIRMAR MOVIMIENTO DE STOCK (ESCANEO) -->
+    <div id="scanActionModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h3 id="scanModalTitle" class="text-base font-bold text-white">Confirmar Movimiento</h3>
+                <button onclick="closeScanActionModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="scanModalBody" class="space-y-2 text-sm text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700">
+                <!-- Se llena dinámicamente -->
+            </div>
+            <div id="qtyContainer" class="space-y-1">
+                <label id="qtyLabel" class="block text-xs font-medium text-slate-400 mb-1">Cantidad a agregar</label>
+                <input type="number" id="scanModalQty" min="1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-12 text-lg font-bold text-center text-slate-100 focus:outline-none focus:border-lab-500">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeScanActionModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-semibold">Cancelar</button>
+                <button type="button" onclick="executeScanAction()" id="scanModalConfirmBtn" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white py-2.5 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i> OK - Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL NUEVO / EDITAR ÍTEM -->
     <div id="itemModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
@@ -278,16 +301,16 @@
         let scanMode = 'deduct';
         let dbRef = null;
         
-        let pendingParsedData = null;
-        let pendingFoundItem = null;
+        let activeScanItem = null;
+        let activeScanParsed = null;
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE
+        // CONFIGURACIÓN DE FIREBASE (Tus datos reales)
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
-            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
-            projectId: "labstock-80756"
+            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
+            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
+            projectId: "labstock-80756"
         };
 
         initFirebase(firebaseConfig);
@@ -517,7 +540,7 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        // --- ESCÁNER DENTRO DEL MODAL ---
+        // --- ESCÁNER DENTRO DEL MODAL DE ALTA ---
         function startModalScanner() {
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
@@ -679,82 +702,98 @@
             }
         }
 
-        // --- PROCESAR CÓDIGO CON CONFIRMACIÓN DE "OK" PREVIA ---
+        // --- PROCESAR ESCANEO Y ABRIR VENTANA MODAL ---
         function processScannedCode(rawData) {
             const cleanRaw = rawData.trim();
             const parsed = parseSmartQR(cleanRaw);
-            pendingParsedData = parsed;
-            
-            const card = document.getElementById('scanResultCard');
-            const content = document.getElementById('scanResultContent');
-            card.classList.remove('hidden');
+            activeScanParsed = parsed;
 
             const item = inventoryArray.find(i => i.code === parsed.code || (parsed.batch && i.batch === parsed.batch));
-            pendingFoundItem = item || null;
+            activeScanItem = item || null;
 
             if (!item) {
-                content.innerHTML = `
-                    <div class="space-y-2 mt-1">
-                        <div class="text-amber-400 font-semibold text-xs">⚡ Nuevo reactivo detectado</div>
-                        <div class="text-xs text-slate-300 bg-slate-950 p-2 rounded border border-slate-800">
-                            <b>Lote:</b> ${parsed.batch || 'No detectado'}<br>
-                            <b>Vto:</b> ${parsed.expiry || 'No detectado'}<br>
-                            <b>Código:</b> ${parsed.code || 'No detectado'}
-                        </div>
-                        <button onclick="confirmPendingScan()" class="w-full bg-lab-600 hover:bg-lab-700 text-white py-2 rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1.5 mt-1">
-                            <i class="fa-solid fa-check"></i> Dar de Alta (OK)
-                        </button>
-                    </div>
-                `;
-            } else {
-                let actionText = scanMode === 'deduct' ? 'Descontar 1 unidad' : (scanMode === 'add' ? 'Sumar 1 unidad' : 'Consultar');
-                let actionColor = scanMode === 'deduct' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-lab-600 hover:bg-lab-700';
-                
-                if (scanMode === 'consult') {
-                    content.innerHTML = `
-                        <div class="space-y-1 text-xs mt-1">
-                            <div class="text-sky-400 font-bold text-sm">📦 ${item.name}</div>
-                            <div>Sección: ${item.section} | Stock actual: <b>${item.stock} u.</b></div>
-                            <div>Lote: ${item.batch} | Vto: ${item.expiry}</div>
-                        </div>
-                    `;
-                } else {
-                    content.innerHTML = `
-                        <div class="space-y-2 text-xs mt-1 bg-slate-950 p-2 rounded border border-slate-800">
-                            <div class="text-slate-200 font-bold text-sm">📦 ${item.name}</div>
-                            <div>Lote: <b>${item.batch}</b> | Stock actual: <b>${item.stock} u.</b></div>
-                            <div class="text-slate-400">Acción seleccionada: <b>${scanMode === 'add' ? 'Sumar 1 unidad' : 'Descontar 1 unidad'}</b></div>
-                            <button onclick="confirmPendingScan()" class="w-full ${actionColor} text-white py-2.5 rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1.5 mt-2">
-                                <i class="fa-solid fa-check text-sm"></i> OK - ${actionText}
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-        }
-
-        function confirmPendingScan() {
-            const card = document.getElementById('scanResultCard');
-            const content = document.getElementById('scanResultContent');
-
-            if (!pendingFoundItem) {
-                openNewItemModal(pendingParsedData);
-                card.classList.add('hidden');
+                // Si no existe, abrir modal de nuevo ítem directamente
+                openNewItemModal(parsed);
                 return;
             }
 
-            if (scanMode === 'deduct') {
-                if (pendingFoundItem.stock > 0) {
-                    adjustStockCloud(pendingFoundItem.id, -1);
-                    content.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡OK! Descontado 1 unidad de:</span> <b>${pendingFoundItem.name}</b> (Nuevo stock: ${pendingFoundItem.stock - 1})`;
-                } else {
-                    content.innerHTML = `<span class="text-rose-400 font-semibold">⚠ Sin stock disponible para:</span> <b>${pendingFoundItem.name}</b>`;
-                }
-            } else if (scanMode === 'add') {
-                adjustStockCloud(pendingFoundItem.id, 1);
-                content.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡OK! Agregado 1 unidad a:</span> <b>${pendingFoundItem.name}</b> (Nuevo stock: ${pendingFoundItem.stock + 1})`;
+            // Si existe, abrir ventana modal de confirmación con cantidad ajustable
+            const modal = document.getElementById('scanActionModal');
+            const title = document.getElementById('scanModalTitle');
+            const body = document.getElementById('scanModalBody');
+            const qtyContainer = document.getElementById('qtyContainer');
+            const qtyLabel = document.getElementById('qtyLabel');
+            const confirmBtn = document.getElementById('scanModalConfirmBtn');
+            const qtyInput = document.getElementById('scanModalQty');
+
+            qtyInput.value = 1; // Default
+
+            if (scanMode === 'consult') {
+                title.innerText = "Consulta de Reactivo";
+                qtyContainer.classList.add('hidden');
+                confirmBtn.classList.add('hidden');
+                body.innerHTML = `
+                    <div class="text-sky-400 font-bold text-base mb-1">📦 ${item.name}</div>
+                    <div class="grid grid-cols-2 gap-1 text-xs">
+                        <div><b>Sección:</b> ${item.section}</div>
+                        <div><b>Stock actual:</b> ${item.stock} u.</div>
+                        <div><b>Lote:</b> ${item.batch}</div>
+                        <div><b>Vto:</b> ${item.expiry}</div>
+                    </div>
+                `;
+            } else {
+                const actionVerb = scanMode === 'add' ? 'agregar' : 'descontar';
+                title.innerText = scanMode === 'add' ? '➕ Sumar Stock al Inventario' : '⚡ Descontar Stock';
+                qtyContainer.classList.remove('hidden');
+                confirmBtn.classList.remove('hidden');
+                qtyLabel.innerText = `Cantidad a ${actionVerb} (Cajas / Unidades):`;
+                
+                confirmBtn.className = scanMode === 'add' 
+                    ? "flex-1 bg-lab-600 hover:bg-lab-700 text-white py-2.5 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-2"
+                    : "flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-2";
+
+                body.innerHTML = `
+                    <div class="text-white font-bold text-base mb-1">📦 ${item.name}</div>
+                    <div class="grid grid-cols-2 gap-1 text-xs text-slate-300">
+                        <div><b>Lote:</b> <span class="text-lab-400 font-mono">${item.batch}</span></div>
+                        <div><b>Stock actual:</b> ${item.stock} u.</div>
+                        <div><b>Vencimiento:</b> ${item.expiry}</div>
+                        <div><b>Sección:</b> ${item.section}</div>
+                    </div>
+                `;
             }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeScanActionModal() {
+            document.getElementById('scanActionModal').classList.add('hidden');
+            document.getElementById('scanActionModal').classList.remove('flex');
+        }
+
+        function executeScanAction() {
+            if (!activeScanItem) return;
+            const qty = parseInt(document.getElementById('scanModalQty').value) || 1;
+            const cardContent = document.getElementById('scanResultContent');
+            const card = document.getElementById('scanResultCard');
+            card.classList.remove('hidden');
+
+            if (scanMode === 'add') {
+                adjustStockCloud(activeScanItem.id, qty);
+                cardContent.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡Se sumaron ${qty} unidad(es) a:</span> <b>${activeScanItem.name}</b> (Lote: ${activeScanItem.batch} | Nuevo Stock: ${activeScanItem.stock + qty})`;
+            } else if (scanMode === 'deduct') {
+                if (activeScanItem.stock >= qty) {
+                    adjustStockCloud(activeScanItem.id, -qty);
+                    cardContent.innerHTML = `<span class="text-rose-400 font-semibold">✔ ¡Se descontaron ${qty} unidad(es) de:</span> <b>${activeScanItem.name}</b> (Lote: ${activeScanItem.batch} | Nuevo Stock: ${activeScanItem.stock - qty})`;
+                } else {
+                    alert('No hay suficiente stock disponible para descontar esa cantidad.');
+                    return;
+                }
+            }
+
             playBeep();
+            closeScanActionModal();
         }
 
         function playBeep() {
