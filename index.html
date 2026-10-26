@@ -68,9 +68,16 @@
             <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
                 <div class="relative flex-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400"></i>
-                    <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Buscar por nombre, código o lote..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-lab-500">
+                    <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Buscar por nombre, código, lote o tipo..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-lab-500">
                 </div>
                 <div class="flex items-center gap-2">
+                    <select id="typeFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                        <option value="">Todos los tipos</option>
+                        <option value="Reactivo">Reactivo</option>
+                        <option value="Calibrador">Calibrador</option>
+                        <option value="Control">Control</option>
+                        <option value="Consumible">Consumible</option>
+                    </select>
                     <select id="sectionFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                         <option value="">Todas las secciones</option>
                         <option value="Química">Química Clínica</option>
@@ -93,6 +100,7 @@
                             <tr class="bg-slate-900/60 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
                                 <th class="p-3.5 font-semibold">Código / Lote</th>
                                 <th class="p-3.5 font-semibold">Reactivo / Insumo</th>
+                                <th class="p-3.5 font-semibold">Tipo</th>
                                 <th class="p-3.5 font-semibold">Sección</th>
                                 <th class="p-3.5 font-semibold">Stock</th>
                                 <th class="p-3.5 font-semibold">Vencimiento</th>
@@ -247,18 +255,37 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná o escribí)</label>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Reactivo (Seleccioná del catálogo o escribí)</label>
                     <input type="text" id="itemName" list="commonReagentsList" required placeholder="Ej: Architect rHTLV-I/II, Virclia Parvovirus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     <datalist id="commonReagentsList">
+                        <!-- Catálogo maestro de nombres homogéneos precargados -->
                         <option value="Architect rHTLV-I/II">
+                        <option value="Architect HIV Ag/Ab Combo">
+                        <option value="Architect HBsAg Qualitative">
                         <option value="Virclia Parvovirus IgM Monotest">
+                        <option value="Virclia CMV IgG Monotest">
                         <option value="Optilite IgG Kit">
+                        <option value="Optilite Free Kappa Kit">
                         <option value="Glucosa GOD-PAP">
                         <option value="Colesterol Total">
+                        <option value="Triglicéridos">
                         <option value="Proteína C Reactiva (PCR)">
+                        <option value="Control Multi-Assay Niv. 1">
+                        <option value="Control Multi-Assay Niv. 2">
+                        <option value="Calibrador Chem Chemistry">
                     </datalist>
                 </div>
+
                 <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Tipo</label>
+                        <select id="itemType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                            <option value="Reactivo">Reactivo</option>
+                            <option value="Calibrador">Calibrador</option>
+                            <option value="Control">Control</option>
+                            <option value="Consumible">Consumible</option>
+                        </select>
+                    </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Sección</label>
                         <select id="itemSection" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
@@ -269,21 +296,24 @@
                             <option value="Biología Molecular">Biología Molecular</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Cantidad / Stock</label>
-                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                    </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">N° de Lote</label>
                         <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Vencimiento</label>
-                        <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Cantidad / Stock</label>
+                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     </div>
                 </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Vencimiento</label>
+                    <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                </div>
+
                 <div class="flex gap-2 pt-2">
                     <button type="button" onclick="closeNewItemModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-semibold">Cancelar</button>
                     <button type="submit" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white py-2 rounded-lg text-sm font-semibold shadow">Guardar en la Nube</button>
@@ -305,7 +335,7 @@
         let activeScanParsed = null;
 
         // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (Tus datos reales)
+        // CONFIGURACIÓN DE FIREBASE (Tus datos)
         // ==========================================
         const firebaseConfig = {
             databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
@@ -328,6 +358,7 @@
                     inventoryMap = data || {};
                     inventoryArray = Object.keys(inventoryMap).map(key => ({
                         id: key,
+                        type: inventoryMap[key].type || 'Reactivo', // Valor por defecto si es viejo
                         ...inventoryMap[key]
                     }));
                     updateCloudStatus('online', 'Conectado a la Nube (En vivo)');
@@ -357,12 +388,11 @@
         function updateReagentDatalist() {
             const datalist = document.getElementById('commonReagentsList');
             const defaultNames = [
-                "Architect rHTLV-I/II",
-                "Virclia Parvovirus IgM Monotest",
-                "Optilite IgG Kit",
-                "Glucosa GOD-PAP",
-                "Colesterol Total",
-                "Proteína C Reactiva (PCR)"
+                "Architect rHTLV-I/II", "Architect HIV Ag/Ab Combo", "Architect HBsAg Qualitative",
+                "Virclia Parvovirus IgM Monotest", "Virclia CMV IgG Monotest", "Optilite IgG Kit",
+                "Optilite Free Kappa Kit", "Glucosa GOD-PAP", "Colesterol Total", "Triglicéridos",
+                "Proteína C Reactiva (PCR)", "Control Multi-Assay Niv. 1", "Control Multi-Assay Niv. 2",
+                "Calibrador Chem Chemistry"
             ];
             inventoryArray.forEach(item => {
                 if (item.name && !defaultNames.includes(item.name)) {
@@ -408,6 +438,12 @@
             emptyState.classList.add('hidden');
 
             dataToRender.forEach((item) => {
+                const itemType = item.type || 'Reactivo';
+                let typeBadgeColor = "bg-emerald-900/60 text-emerald-300 border-emerald-700";
+                if (itemType === 'Calibrador') typeBadgeColor = "bg-sky-900/60 text-sky-300 border-sky-700";
+                if (itemType === 'Control') typeBadgeColor = "bg-amber-900/60 text-amber-300 border-amber-700";
+                if (itemType === 'Consumible') typeBadgeColor = "bg-purple-900/60 text-purple-300 border-purple-700";
+
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-750 transition border-b border-slate-700/50";
                 tr.innerHTML = `
@@ -416,6 +452,7 @@
                         <div class="text-[11px] text-slate-400 mt-1">Lote: ${item.batch}</div>
                     </td>
                     <td class="p-3.5 font-medium text-white">${item.name}</td>
+                    <td class="p-3.5"><span class="text-xs px-2.5 py-1 rounded-full border ${typeBadgeColor}">${itemType}</span></td>
                     <td class="p-3.5"><span class="bg-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-full">${item.section}</span></td>
                     <td class="p-3.5"><span class="font-bold ${item.stock <= 3 ? 'text-rose-400' : 'text-slate-200'}">${item.stock} u.</span></td>
                     <td class="p-3.5 text-xs text-slate-300">${item.expiry}</td>
@@ -435,10 +472,14 @@
         function filterInventory() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const section = document.getElementById('sectionFilter').value;
+            const typeFilt = document.getElementById('typeFilter').value;
+            
             const filtered = inventoryArray.filter(item => {
-                const matchesQuery = item.name.toLowerCase().includes(query) || item.code.toLowerCase().includes(query) || item.batch.toLowerCase().includes(query);
+                const itemType = item.type || 'Reactivo';
+                const matchesQuery = item.name.toLowerCase().includes(query) || item.code.toLowerCase().includes(query) || item.batch.toLowerCase().includes(query) || itemType.toLowerCase().includes(query);
                 const matchesSection = section === "" || item.section === section;
-                return matchesQuery && matchesSection;
+                const matchesType = typeFilt === "" || itemType === typeFilt;
+                return matchesQuery && matchesSection && matchesType;
             });
             renderInventory(filtered);
         }
@@ -613,6 +654,7 @@
             document.getElementById('editKey').value = id;
             document.getElementById('itemCode').value = item.code;
             document.getElementById('itemName').value = item.name;
+            document.getElementById('itemType').value = item.type || 'Reactivo';
             document.getElementById('itemSection').value = item.section;
             document.getElementById('itemStock').value = item.stock;
             document.getElementById('itemBatch').value = item.batch;
@@ -634,6 +676,7 @@
             const newItem = {
                 code: document.getElementById('itemCode').value,
                 name: document.getElementById('itemName').value,
+                type: document.getElementById('itemType').value,
                 section: document.getElementById('itemSection').value,
                 stock: parseInt(document.getElementById('itemStock').value),
                 batch: document.getElementById('itemBatch').value,
@@ -712,12 +755,10 @@
             activeScanItem = item || null;
 
             if (!item) {
-                // Si no existe, abrir modal de nuevo ítem directamente
                 openNewItemModal(parsed);
                 return;
             }
 
-            // Si existe, abrir ventana modal de confirmación con cantidad ajustable
             const modal = document.getElementById('scanActionModal');
             const title = document.getElementById('scanModalTitle');
             const body = document.getElementById('scanModalBody');
@@ -726,19 +767,19 @@
             const confirmBtn = document.getElementById('scanModalConfirmBtn');
             const qtyInput = document.getElementById('scanModalQty');
 
-            qtyInput.value = 1; // Default
+            qtyInput.value = 1;
 
             if (scanMode === 'consult') {
-                title.innerText = "Consulta de Reactivo";
+                title.innerText = "Consulta de Ítem";
                 qtyContainer.classList.add('hidden');
                 confirmBtn.classList.add('hidden');
                 body.innerHTML = `
                     <div class="text-sky-400 font-bold text-base mb-1">📦 ${item.name}</div>
                     <div class="grid grid-cols-2 gap-1 text-xs">
+                        <div><b>Tipo:</b> ${item.type || 'Reactivo'}</div>
                         <div><b>Sección:</b> ${item.section}</div>
                         <div><b>Stock actual:</b> ${item.stock} u.</div>
                         <div><b>Lote:</b> ${item.batch}</div>
-                        <div><b>Vto:</b> ${item.expiry}</div>
                     </div>
                 `;
             } else {
@@ -755,10 +796,10 @@
                 body.innerHTML = `
                     <div class="text-white font-bold text-base mb-1">📦 ${item.name}</div>
                     <div class="grid grid-cols-2 gap-1 text-xs text-slate-300">
-                        <div><b>Lote:</b> <span class="text-lab-400 font-mono">${item.batch}</span></div>
+                        <div><b>Tipo:</b> <span class="text-lab-400">${item.type || 'Reactivo'}</span></div>
                         <div><b>Stock actual:</b> ${item.stock} u.</div>
+                        <div><b>Lote:</b> <span class="font-mono">${item.batch}</span></div>
                         <div><b>Vencimiento:</b> ${item.expiry}</div>
-                        <div><b>Sección:</b> ${item.section}</div>
                     </div>
                 `;
             }
