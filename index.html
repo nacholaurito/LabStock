@@ -282,9 +282,9 @@
         // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://TU-PROYECTO-default-rtdb.firebaseio.com",
-            apiKey: "TU_API_KEY_AQUI",
-            projectId: "TU_PROJECT_ID_AQUI"
+            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
+            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
+            projectId: "labstock-80756"
         };
 
         initFirebase(firebaseConfig);
@@ -430,7 +430,7 @@
             }
         }
 
-        // --- PARSER PRECISO PARA EL LOTE ENTRE (10) Y (240) ---
+        // --- PARSER CORREGIDO PARA EXTRAER EL LOTE ENTRE (10) Y (240) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
             let clean = rawData.trim().replace(/[()\\]/g, '').replace(/[\x1d\u001d\u0000-\u001f]/g, '');
@@ -457,13 +457,15 @@
                 expiry = `${yy}-${mm}-${dd}`;
             }
 
-            // 3. Lote (AI 10 -> Todo lo que está entre '10' y el próximo indicador como '240' o fin)
+            // 3. Lote (AI 10 -> Toma lo que está entre '10' y el próximo AI como '240', '17', '01' o fin de cadena)
             const idx10 = clean.indexOf('10');
             if (idx10 !== -1) {
                 let sub = clean.substring(idx10 + 2);
-                let idxNext = sub.search(/(240|17|01)/); // Busca el siguiente campo de control GS1
-                if (idxNext !== -1) {
-                    batch = sub.substring(0, idxNext);
+                // Busca de forma estricta el límite donde arranca el siguiente identificador (ej: 240, 17, 01)
+                const matchNextAI = sub.match(/(240|17\d{6}|01\d{14})/);
+                if (matchNextAI) {
+                    let pos = sub.indexOf(matchNextAI[0]);
+                    batch = sub.substring(0, pos);
                 } else {
                     batch = sub;
                 }
