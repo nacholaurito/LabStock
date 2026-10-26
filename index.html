@@ -152,7 +152,7 @@
                 </div>
 
                 <div id="scanResultCard" class="hidden mt-4 p-3.5 bg-slate-900 rounded-lg border border-slate-700">
-                    <p class="text-xs text-slate-400">Resultado reciente:</p>
+                    <p class="text-xs text-slate-400">Resultado escaneado:</p>
                     <div id="scanResultContent" class="text-sm font-medium text-slate-200 mt-1"></div>
                 </div>
             </div>
@@ -277,14 +277,17 @@
         let modalQrCode = null;
         let scanMode = 'deduct';
         let dbRef = null;
+        
+        let pendingParsedData = null;
+        let pendingFoundItem = null;
 
         // ==========================================
         // CONFIGURACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
-            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
-            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
-            projectId: "labstock-80756"
+            databaseURL: "https://TU-PROYECTO-default-rtdb.firebaseio.com",
+            apiKey: "TU_API_KEY_AQUI",
+            projectId: "TU_PROJECT_ID_AQUI"
         };
 
         initFirebase(firebaseConfig);
@@ -430,7 +433,7 @@
             }
         }
 
-        // --- MOTOR PARSER SECUENCIAL GS1 (ROBUSTO PARA FORMATO CON PARÉNTESIS Y CRUDO) ---
+        // --- MOTOR PARSER SECUENCIAL GS1 (ROBUSTO) ---
         function parseSmartQR(rawData) {
             if (!rawData) return { code: '', batch: '', expiry: '' };
             
@@ -460,7 +463,7 @@
                 }
             }
 
-            // 2. Si viene en crudo (secuencial estricto)
+            // 2. Si viene en crudo
             if (!code || !batch || !expiry) {
                 let raw = clean.replace(/[()\\]/g, '');
                 let i = 0;
@@ -480,7 +483,7 @@
                         }
                         i += 8;
                     } else if (raw.startsWith('10', i)) {
-                        i += 2; // Omitir AI '10'
+                        i += 2; 
                         let sub = raw.substring(i);
                         let endIdx = raw.length;
                         
@@ -488,7 +491,6 @@
                         if (sepIdx !== -1) {
                             endIdx = i + sepIdx;
                         } else {
-                            // Buscar el siguiente identificador de aplicación estándar (como 240, 17, etc.)
                             const nextAiMatch = sub.search(/(240|250|21|17\d{6})/);
                             if (nextAiMatch !== -1 && nextAiMatch > 0) {
                                 endIdx = i + nextAiMatch;
@@ -677,36 +679,82 @@
             }
         }
 
+        // --- PROCESAR CÓDIGO CON CONFIRMACIÓN DE "OK" PREVIA ---
         function processScannedCode(rawData) {
             const cleanRaw = rawData.trim();
             const parsed = parseSmartQR(cleanRaw);
+            pendingParsedData = parsed;
+            
             const card = document.getElementById('scanResultCard');
             const content = document.getElementById('scanResultContent');
             card.classList.remove('hidden');
 
             const item = inventoryArray.find(i => i.code === parsed.code || (parsed.batch && i.batch === parsed.batch));
+            pendingFoundItem = item || null;
 
             if (!item) {
-                content.innerHTML = `<span class="text-amber-400">⚡ Nuevo reactivo detectado (${parsed.batch || parsed.code}). Abriendo alta automática...</span>`;
-                setTimeout(() => {
-                    openNewItemModal(parsed);
-                }, 600);
+                content.innerHTML = `
+                    <div class="space-y-2 mt-1">
+                        <div class="text-amber-400 font-semibold text-xs">⚡ Nuevo reactivo detectado</div>
+                        <div class="text-xs text-slate-300 bg-slate-950 p-2 rounded border border-slate-800">
+                            <b>Lote:</b> ${parsed.batch || 'No detectado'}<br>
+                            <b>Vto:</b> ${parsed.expiry || 'No detectado'}<br>
+                            <b>Código:</b> ${parsed.code || 'No detectado'}
+                        </div>
+                        <button onclick="confirmPendingScan()" class="w-full bg-lab-600 hover:bg-lab-700 text-white py-2 rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1.5 mt-1">
+                            <i class="fa-solid fa-check"></i> Dar de Alta (OK)
+                        </button>
+                    </div>
+                `;
+            } else {
+                let actionText = scanMode === 'deduct' ? 'Descontar 1 unidad' : (scanMode === 'add' ? 'Sumar 1 unidad' : 'Consultar');
+                let actionColor = scanMode === 'deduct' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-lab-600 hover:bg-lab-700';
+                
+                if (scanMode === 'consult') {
+                    content.innerHTML = `
+                        <div class="space-y-1 text-xs mt-1">
+                            <div class="text-sky-400 font-bold text-sm">📦 ${item.name}</div>
+                            <div>Sección: ${item.section} | Stock actual: <b>${item.stock} u.</b></div>
+                            <div>Lote: ${item.batch} | Vto: ${item.expiry}</div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div class="space-y-2 text-xs mt-1 bg-slate-950 p-2 rounded border border-slate-800">
+                            <div class="text-slate-200 font-bold text-sm">📦 ${item.name}</div>
+                            <div>Lote: <b>${item.batch}</b> | Stock actual: <b>${item.stock} u.</b></div>
+                            <div class="text-slate-400">Acción seleccionada: <b>${scanMode === 'add' ? 'Sumar 1 unidad' : 'Descontar 1 unidad'}</b></div>
+                            <button onclick="confirmPendingScan()" class="w-full ${actionColor} text-white py-2.5 rounded-lg text-xs font-bold shadow flex items-center justify-center gap-1.5 mt-2">
+                                <i class="fa-solid fa-check text-sm"></i> OK - ${actionText}
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function confirmPendingScan() {
+            const card = document.getElementById('scanResultCard');
+            const content = document.getElementById('scanResultContent');
+
+            if (!pendingFoundItem) {
+                openNewItemModal(pendingParsedData);
+                card.classList.add('hidden');
                 return;
             }
 
             if (scanMode === 'deduct') {
-                if (item.stock > 0) {
-                    adjustStockCloud(item.id, -1);
-                    content.innerHTML = `<span class="text-lab-400">✔ Descontado 1 unidad de:</span> <b>${item.name}</b> (Lote: ${item.batch} | Stock actual: ${item.stock - 1})`;
+                if (pendingFoundItem.stock > 0) {
+                    adjustStockCloud(pendingFoundItem.id, -1);
+                    content.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡OK! Descontado 1 unidad de:</span> <b>${pendingFoundItem.name}</b> (Nuevo stock: ${pendingFoundItem.stock - 1})`;
                 } else {
-                    content.innerHTML = `<span class="text-rose-400">⚠ Sin stock disponible para:</span> <b>${item.name}</b>`;
+                    content.innerHTML = `<span class="text-rose-400 font-semibold">⚠ Sin stock disponible para:</span> <b>${pendingFoundItem.name}</b>`;
                 }
             } else if (scanMode === 'add') {
-                adjustStockCloud(item.id, 1);
-                content.innerHTML = `<span class="text-lab-400">✔ Agregado 1 unidad a:</span> <b>${item.name}</b> (Lote: ${item.batch} | Stock actual: ${item.stock + 1})`;
-            } else {
-                content.innerHTML = `<span class="text-sky-400">📦 ${item.name}</span><br>Sección: ${item.section} | Stock: <b>${item.stock} u.</b><br>Lote: ${item.batch} | Vto: ${item.expiry}`;
+                adjustStockCloud(pendingFoundItem.id, 1);
+                content.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡OK! Agregado 1 unidad a:</span> <b>${pendingFoundItem.name}</b> (Nuevo stock: ${pendingFoundItem.stock + 1})`;
             }
+            playBeep();
         }
 
         function playBeep() {
