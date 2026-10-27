@@ -28,14 +28,14 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- HEADER / BARRA SUPERIOR CORREGIDA -->
-    <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3 py-2.5 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-2 min-w-0 flex-1 mr-2">
-            <!-- LOGO LIMPIO SIN CAJITA EXTRA (Reemplazá 'logo.png' por el nombre de tu archivo) -->
-            <img src="tu-logo.PNG" alt="Logo" class="w-9 h-9 object-contain shrink-0">
+    <!-- HEADER / BARRA SUPERIOR CON LOGO ESTILIZADO -->
+    <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
+            <!-- LOGO MEJORADO: Bordes redondeados, sombra y borde elegante -->
+            <img src="tu-logo.PNG" alt="Logo" class="w-10 h-10 md:w-11 md:h-11 object-cover rounded-xl shadow-md border border-slate-600/80 shrink-0">
             <div class="min-w-0 flex-1">
-                <h1 class="text-sm sm:text-base font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
-                <p class="text-[10px] text-slate-400 truncate hidden sm:block">Control de Insumos de Laboratorio</p>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
+                <p class="text-xs text-slate-400 truncate hidden sm:block">Control de Insumos de Laboratorio</p>
             </div>
         </div>
 
@@ -55,7 +55,7 @@
         </nav>
 
         <div class="flex items-center space-x-2 shrink-0">
-            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-2.5 py-1 rounded-full text-slate-300">
+            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-3 py-1 rounded-full text-slate-300">
                 <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
                 <span id="statusText">Conectando...</span>
             </div>
@@ -867,7 +867,7 @@
             scanMode = mode;
             document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
             document.getElementById('modeBtnAdd').className = mode === 'add' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
-            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
+            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
         }
 
         function startScanner() {
