@@ -1,3 +1,6 @@
+Ahí se ve claramente: como la imagen de la caja tiene un fondo blanco (o rectangular), al colocarla directamente sobre la barra oscura (bg-slate-800) se nota el recuadro cuadrado y desentona con el diseño moderno.
+Para solucionarlo y que quede con aspecto de ícono de aplicación profesional (con sus esquinas redondeadas y perfectamente integrado al diseño oscuro), vamos a colocar la caja dentro del mismo contenedor con bordes redondeados y sombra que usábamos antes, pero adaptado a su tamaño.
+Aquí tienes el código completo actualizado con ese ajuste visual perfecto:
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -28,11 +31,13 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- HEADER / BARRA SUPERIOR CON LOGO WEBP -->
+    <!-- HEADER / BARRA SUPERIOR -->
     <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
-            <!-- LOGO DE LA CAJA (WEBP) -->
-            <img src="caja_png_transparente.png" alt="Logo" class="w-10 h-10 md:w-11 md:h-11 object-cover rounded-xl shadow-md border border-slate-700/85 bg-slate-900 shrink-0">
+            <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
+            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
+                <img src="logo.webp" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
+            </div>
             <div class="min-w-0 flex-1">
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
                 <p class="text-xs text-slate-400 truncate hidden sm:block">Control de Insumos de Laboratorio</p>
@@ -1020,3 +1025,4 @@
     </script>
 </body>
 </html>
+
