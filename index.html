@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LudovicApp stock - Control de Insumos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Motor avanzado ZXing para lectura perfecta de DataMatrix industriales -->
-    <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -131,7 +130,7 @@
                 </div>
 
                 <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
-                    <video id="video" class="w-full h-full object-cover"></video>
+                    <div id="reader" class="w-full h-full"></div>
                     <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
                         <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
                         <p class="text-xs">Cámara inactiva</p>
@@ -268,7 +267,7 @@
                         </button>
                     </div>
                     <div id="modalReaderContainer" class="hidden aspect-square max-w-xs mx-auto bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
-                        <video id="modal-video" class="w-full h-full object-cover"></video>
+                        <div id="modal-reader" class="w-full h-full"></div>
                         <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow z-10">Cerrar</button>
                     </div>
                 </div>
@@ -328,7 +327,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT PRINCIPAL CON ZXING -->
+    <!-- SCRIPT PRINCIPAL CON BARCODE DETECTOR NATIVO -->
     <script>
         let inventoryMap = {}; 
         let inventoryArray = []; 
@@ -337,7 +336,8 @@
         let openAccordions = {};
         let activeKpiFilter = 'all';
 
-        let codeReader = new ZXing.BrowserBarcodeReader();
+        let html5QrCode = null;
+        let modalQrCode = null;
         let scanMode = 'deduct';
         let dbRef = null;
         let catalogRef = null;
@@ -520,7 +520,7 @@
             });
 
             if (tabId === 'labels') populateLabelSelect();
-            if (tabId !== 'scan') stopScanner();
+            if (tabId !== 'scan' && html5QrCode && html5QrCode.isScanning) stopScanner();
         }
 
         function getTypeBadgeStyle(type) {
@@ -712,10 +712,9 @@
                         i += 8;
                     } else if (raw.startsWith('10', i)) {
                         i += 2; let sub = raw.substring(i), endIdx = sub.indexOf('|');
-                        if (sepIdx !== -1) endIdx = i + sepIdx;
-                        batch = raw.substring(i, endIdx).replace(/\|/g, '').trim(); 
-                        i = endIdx;
-                        if (raw[i] === '|') i++;
+                        if (endIdx === -1) endIdx = sub.length;
+                        batch = sub.substring(0, endIdx).replace(/\|/g, '').trim();
+                        i += endIdx;
                     } else { i++; }
                 }
             }
@@ -731,15 +730,49 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
+        // Activación del escáner con soporte para BarcodeDetector nativo (DataMatrix industrial)
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
-            codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-                if (result) {
-                    processScannedCode(result.text);
-                    playBeep();
-                }
-            }).catch(err => { alert("Error al iniciar cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
+            html5QrCode = new Html5Qrcode("reader");
             
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 280, height: 280 },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.EAN_13
+                ],
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    processScannedCode(decodedText); 
+                    playBeep();
+                }, 
+                (error) => {}
+            ).then(() => {
+                // Forzar zoom x2 automático para que la cámara enfoque de cerca el código pequeño sin perder nitidez
+                try {
+                    const tracks = html5QrCode.getRunningTrack();
+                    if (tracks && tracks.getCapabilities) {
+                        const capabilities = tracks.getCapabilities();
+                        if (capabilities.zoom) {
+                            tracks.applyConstraints({ advanced: [{ zoom: 2.0 }] });
+                        }
+                    }
+                } catch(e) {}
+            }).catch(err => { 
+                alert("No se pudo iniciar la cámara."); 
+                document.getElementById('scannerPlaceholder').classList.remove('hidden'); 
+            });
+
             document.getElementById('startCameraBtn').classList.add('hidden');
             document.getElementById('stopCameraBtn').classList.remove('hidden');
         }
@@ -747,28 +780,54 @@
         function startModalScanner() {
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
-            codeReader.decodeFromVideoDevice(undefined, 'modal-video', (result, err) => {
-                if (result) {
-                    const parsed = parseSmartQR(result.text);
+            modalQrCode = new Html5Qrcode("modal-reader");
+            
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 250, height: 250 },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128
+                ],
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
+            };
+
+            modalQrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    const parsed = parseSmartQR(decodedText);
                     if (parsed.code) document.getElementById('itemCode').value = parsed.code;
                     if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
                     if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
                     playBeep(); 
                     stopModalScanner();
-                }
-            }).catch(err => { alert("Error de cámara."); container.classList.add('hidden'); });
+                }, 
+                (error) => {}
+            ).catch(err => { 
+                container.classList.add('hidden'); 
+            });
         }
 
         function stopScanner() {
-            codeReader.reset();
-            document.getElementById('scannerPlaceholder').classList.remove('hidden');
-            document.getElementById('startCameraBtn').classList.remove('hidden');
-            document.getElementById('stopCameraBtn').classList.add('hidden');
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scannerPlaceholder').classList.remove('hidden');
+                    document.getElementById('startCameraBtn').classList.remove('hidden');
+                    document.getElementById('stopCameraBtn').classList.add('hidden');
+                });
+            }
         }
 
         function stopModalScanner() {
-            codeReader.reset();
-            document.getElementById('modalReaderContainer').classList.add('hidden');
+            if (modalQrCode && modalQrCode.isScanning) {
+                modalQrCode.stop().then(() => document.getElementById('modalReaderContainer').classList.add('hidden')).catch(() => document.getElementById('modalReaderContainer').classList.add('hidden'));
+            } else {
+                document.getElementById('modalReaderContainer').classList.add('hidden');
+            }
         }
 
         function handleManualScanKey(event) {
