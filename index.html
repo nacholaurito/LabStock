@@ -31,7 +31,6 @@
     <!-- HEADER / BARRA SUPERIOR -->
     <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
-            <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
             <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
                 <img src="logo.webp" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
             </div>
@@ -69,8 +68,6 @@
 
         <!-- 1. PESTAÑA INVENTARIO -->
         <section id="tab-inventory" class="tab-content space-y-3.5">
-            
-            <!-- TARJETAS DE RESUMEN CLICKEABLES (KPIs FILTRADORES) -->
             <div class="grid grid-cols-3 gap-2">
                 <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
@@ -86,7 +83,6 @@
                 </div>
             </div>
 
-            <!-- BARRA DE BÚSQUEDA Y FILTROS -->
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm space-y-2.5">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
@@ -111,9 +107,7 @@
                 </div>
             </div>
 
-            <!-- CONTENEDOR AGRUPADO EN COLUMNAS (ACORDEÓN) -->
-            <div id="inventoryGroupedContainer" class="space-y-2.5">
-            </div>
+            <div id="inventoryGroupedContainer" class="space-y-2.5"></div>
 
             <div id="emptyInventory" class="hidden p-8 text-center text-slate-400">
                 <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-600"></i>
@@ -135,8 +129,9 @@
                     </div>
                 </div>
 
-                <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
-                    <div id="reader" class="w-full h-full"></div>
+                <!-- CONTENEDOR CON TAMAÑO FORZADO Y VISIBLE PARA HTML5-QRCODE -->
+                <div class="relative bg-black rounded-lg overflow-hidden w-full max-w-xs mx-auto border border-slate-700" style="height: 300px; min-height: 300px;">
+                    <div id="reader" style="width: 100%; height: 100%;"></div>
                     <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900 pointer-events-none z-10">
                         <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
                         <p class="text-xs">Cámara inactiva</p>
@@ -206,8 +201,7 @@
                 </div>
 
                 <div class="border border-slate-700 rounded-lg overflow-hidden bg-slate-900 max-h-64 overflow-y-auto">
-                    <ul id="catalogList" class="divide-y divide-slate-800 text-sm">
-                    </ul>
+                    <ul id="catalogList" class="divide-y divide-slate-800 text-sm"></ul>
                 </div>
             </div>
         </section>
@@ -246,8 +240,7 @@
                 <h3 id="scanModalTitle" class="text-base font-bold text-white">Confirmar Movimiento</h3>
                 <button onclick="closeScanActionModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div id="scanModalBody" class="space-y-1.5 text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700">
-            </div>
+            <div id="scanModalBody" class="space-y-1.5 text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700"></div>
             <div id="qtyContainer" class="space-y-1">
                 <label id="qtyLabel" class="block text-xs font-medium text-slate-400">Cantidad a agregar</label>
                 <input type="number" id="scanModalQty" min="1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-11 text-lg font-bold text-center text-slate-100 focus:outline-none focus:border-lab-500">
@@ -279,9 +272,10 @@
                             <i class="fa-solid fa-camera"></i> Escanear
                         </button>
                     </div>
-                    <div id="modalReaderContainer" class="hidden aspect-square max-w-xs mx-auto bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
-                        <div id="modal-reader" class="w-full h-full"></div>
-                        <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow z-10">Cerrar</button>
+                    <!-- CONTENEDOR MODAL CON TAMAÑO FORZADO -->
+                    <div id="modalReaderContainer" class="hidden w-full max-w-xs mx-auto bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700" style="height: 250px;">
+                        <div id="modal-reader" style="width: 100%; height: 100%;"></div>
+                        <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow z-20">Cerrar</button>
                     </div>
                 </div>
 
@@ -291,9 +285,7 @@
                         <input type="text" id="itemName" required autocomplete="off" oninput="handleNameSearchInput(event)" onfocus="handleNameSearchInput(event)" placeholder="Escribí para buscar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                         <i class="fa-solid fa-chevron-down absolute right-3.5 top-3.5 text-xs text-slate-500 pointer-events-none"></i>
                     </div>
-
-                    <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
-                    </div>
+                    <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -552,22 +544,17 @@
             });
 
             if (tabId === 'labels') populateLabelSelect();
-            if (tabId !== 'scan' && html5QrCode) {
+            if (tabId !== 'scan') {
                 stopScanner();
             }
         }
 
         function getTypeBadgeStyle(type) {
             switch(type) {
-                case 'Calibrador':
-                    return 'bg-sky-950 text-sky-400 border-sky-800/80';
-                case 'Control':
-                    return 'bg-purple-950 text-purple-400 border-purple-800/80';
-                case 'Consumible':
-                    return 'bg-amber-950 text-amber-400 border-amber-800/80';
-                case 'Reactivo':
-                default:
-                    return 'bg-emerald-950 text-emerald-400 border-emerald-800/80';
+                case 'Calibrador': return 'bg-sky-950 text-sky-400 border-sky-800/80';
+                case 'Control': return 'bg-purple-950 text-purple-400 border-purple-800/80';
+                case 'Consumible': return 'bg-amber-950 text-amber-400 border-amber-800/80';
+                case 'Reactivo': default: return 'bg-emerald-950 text-emerald-400 border-emerald-800/80';
             }
         }
 
@@ -624,9 +611,7 @@
                         const expDate = new Date(lot.expiry + 'T00:00:00');
                         const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
                         if (diffDays < 0) hasExpired = true;
-                        if (diffDays < minDays) {
-                            minDays = diffDays;
-                        }
+                        if (diffDays < minDays) minDays = diffDays;
                     }
                 });
 
@@ -783,45 +768,46 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        function startModalScanner() {
+        async function startModalScanner() {
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
             if (modalQrCode) {
-                try { modalQrCode.stop().catch(() => {}); } catch(e) {}
+                try { await modalQrCode.stop(); } catch(e) {}
             }
             modalQrCode = new Html5Qrcode("modal-reader");
             const config = { 
                 fps: 15, 
-                qrbox: { width: 220, height: 220 }, 
+                qrbox: { width: 200, height: 200 }, 
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.DATA_MATRIX, 
                     Html5QrcodeSupportedFormats.QR_CODE, 
                     Html5QrcodeSupportedFormats.CODE_128
                 ] 
             };
-            modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                const parsed = parseSmartQR(decodedText);
-                if (parsed.code) document.getElementById('itemCode').value = parsed.code;
-                if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
-                if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
-                playBeep(); 
-                stopModalScanner();
-            }, (error) => {}).catch(err => { 
+            try {
+                await modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                    const parsed = parseSmartQR(decodedText);
+                    if (parsed.code) document.getElementById('itemCode').value = parsed.code;
+                    if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
+                    if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
+                    playBeep(); 
+                    stopModalScanner();
+                }, (error) => {});
+            } catch (err) {
                 console.warn("Fallo de cámara modal:", err);
                 container.classList.add('hidden'); 
-            });
+            }
         }
 
-        function stopModalScanner() {
+        async function stopModalScanner() {
             if (modalQrCode) {
-                modalQrCode.stop().then(() => {
-                    document.getElementById('modalReaderContainer').classList.add('hidden');
-                }).catch(() => {
-                    document.getElementById('modalReaderContainer').classList.add('hidden');
-                });
-            } else {
-                document.getElementById('modalReaderContainer').classList.add('hidden');
+                try {
+                    if (modalQrCode.isScanning) {
+                        await modalQrCode.stop();
+                    }
+                } catch(e) {}
             }
+            document.getElementById('modalReaderContainer').classList.add('hidden');
         }
 
         function openNewItemModal(prefillData = null) {
@@ -929,7 +915,7 @@
             } catch (err) {
                 console.error("Error al iniciar cámara principal:", err);
                 placeholder.classList.remove('hidden');
-                alert("No se pudo acceder a la cámara. Revisa permisos o HTTPS.");
+                alert("No se pudo acceder a la cámara. Asegúrate de estar usando HTTPS o localhost.");
             }
         }
 
@@ -939,16 +925,13 @@
                     if (html5QrCode.isScanning) {
                         await html5QrCode.stop();
                     }
-                } catch (e) {
-                    console.warn("Error deteniendo escáner:", e);
-                }
+                } catch (e) {}
             }
             document.getElementById('scannerPlaceholder').classList.remove('hidden');
             document.getElementById('startCameraBtn').classList.remove('hidden');
             document.getElementById('stopCameraBtn').classList.add('hidden');
         }
 
-        // Control de ciclo de vida para evitar pantallas negras al minimizar/cambiar de pestaña
         window.addEventListener('visibilitychange', async () => {
             if (document.hidden) {
                 await stopScanner();
