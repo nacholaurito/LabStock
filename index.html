@@ -28,11 +28,13 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- HEADER / BARRA SUPERIOR CON LOGO WEBP -->
+    <!-- HEADER / BARRA SUPERIOR -->
     <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
-            <!-- LOGO DE LA CAJA (WEBP) -->
-            <img src="logo.webp" alt="Logo" class="w-10 h-10 md:w-11 md:h-11 object-cover rounded-xl shadow-md border border-slate-700/85 bg-slate-900 shrink-0">
+            <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
+            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
+                <img src="logo.webp" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
+            </div>
             <div class="min-w-0 flex-1">
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
                 <p class="text-xs text-slate-400 truncate hidden sm:block">Control de Insumos de Laboratorio</p>
@@ -732,6 +734,7 @@
             let code = '', batch = '', expiry = '';
             let clean = rawData.trim().replace(/[\x1d\u001d\u0000-\u001f]/g, '|');
 
+            // Formato GS1 con paréntesis (ej: (01)...(17)...(10)...)
             if (clean.includes('(')) {
                 const matches = [...clean.matchAll(/\((\d+)\)([^\(\)]+)/g)];
                 for (const match of matches) {
@@ -741,10 +744,11 @@
                         let yy = '20' + val.substring(0, 2), mm = val.substring(2, 4), dd = val.substring(4, 6);
                         if (dd === '00' || dd > '31') dd = '01';
                         expiry = `${yy}-${mm}-${dd}`;
-                    } else if (ai === '10') batch = val.split(' ')[0];
+                    } else if (ai === '10') batch = val.split(' ')[0].replace(/\|/g, '');
                 }
             }
 
+            // Formato GS1 sin paréntesis (Application Identifiers estándar)
             if (!code || !batch || !expiry) {
                 let raw = clean.replace(/[()\\]/g, ''), i = 0;
                 while (i < raw.length) {
@@ -762,20 +766,27 @@
                         i += 2; let sub = raw.substring(i), endIdx = raw.length;
                         let sepIdx = sub.indexOf('|');
                         if (sepIdx !== -1) endIdx = i + sepIdx;
-                        else {
-                            const nextAiMatch = sub.search(/(240|250|21|17\d{6})/);
-                            if (nextAiMatch !== -1 && nextAiMatch > 0) endIdx = i + nextAiMatch;
-                        }
-                        batch = raw.substring(i, endIdx).trim(); i = endIdx;
+                        batch = raw.substring(i, endIdx).replace(/\|/g, '').trim(); 
+                        i = endIdx;
                         if (raw[i] === '|') i++;
-                    } else if (raw.startsWith('240', i)) {
-                        i += 3; let sub = raw.substring(i);
-                        let sepIdx = sub.indexOf('|');
-                        if (sepIdx !== -1) i += sepIdx + 1;
-                        else break;
-                    } else i++;
+                    } else {
+                        i++;
+                    }
                 }
             }
+
+            // Respaldo para códigos cerrados o de lote directo en la etiqueta de la caja
+            if (!code && clean.length >= 10) {
+                code = clean.substring(0, Math.min(14, clean.length)).replace(/\|/g, '');
+            }
+            if (!batch && clean.includes('LOT')) {
+                let parts = clean.split('LOT');
+                if (parts[1]) batch = parts[1].replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+            } else if (!batch && clean.length > 14) {
+                let possibleBatch = clean.substring(14).split('|')[0].replace(/[^a-zA-Z0-9]/g, '');
+                if (possibleBatch.length > 2) batch = possibleBatch;
+            }
+
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
@@ -783,14 +794,40 @@
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
             modalQrCode = new Html5Qrcode("modal-reader");
-            const config = { fps: 10, qrbox: { width: 220, height: 220 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
-            modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                const parsed = parseSmartQR(decodedText);
-                if (parsed.code) document.getElementById('itemCode').value = parsed.code;
-                if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
-                if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
-                playBeep(); stopModalScanner();
-            }, (error) => {}).catch(err => { alert("Error de cámara."); container.classList.add('hidden'); });
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 250, height: 250 }, 
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.EAN_13
+                ],
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            };
+            modalQrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    const parsed = parseSmartQR(decodedText);
+                    if (parsed.code) document.getElementById('itemCode').value = parsed.code;
+                    if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
+                    if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
+                    playBeep(); stopModalScanner();
+                }, 
+                (error) => {}
+            ).then(() => {
+                // Aplicar zoom por software (×2) para facilitar la lectura de códigos pequeños de reactivos
+                try {
+                    const tracks = modalQrCode.getRunningTrack();
+                    if (tracks && tracks.getCapabilities) {
+                        const capabilities = tracks.getCapabilities();
+                        if (capabilities.zoom) {
+                            tracks.applyConstraints({ advanced: [{ zoom: 2.0 }] });
+                        }
+                    }
+                } catch(e) {}
+            }).catch(err => { alert("Error de cámara."); container.classList.add('hidden'); });
         }
 
         function stopModalScanner() {
@@ -873,10 +910,37 @@
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                processScannedCode(decodedText); playBeep();
-            }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 250, height: 250 }, 
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.EAN_13
+                ],
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            };
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    processScannedCode(decodedText); playBeep();
+                }, 
+                (error) => {}
+            ).then(() => {
+                // Aplicar zoom por software (×2) en la pestaña principal de escáner
+                try {
+                    const tracks = html5QrCode.getRunningTrack();
+                    if (tracks && tracks.getCapabilities) {
+                        const capabilities = tracks.getCapabilities();
+                        if (capabilities.zoom) {
+                            tracks.applyConstraints({ advanced: [{ zoom: 2.0 }] });
+                        }
+                    }
+                } catch(e) {}
+            }).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
+            
             document.getElementById('startCameraBtn').classList.add('hidden');
             document.getElementById('stopCameraBtn').classList.remove('hidden');
         }
