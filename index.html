@@ -33,7 +33,7 @@
         <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
             <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
             <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
-                <img src="caja_png_transparente.png" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
+                <img src="logo.webp" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
             </div>
             <div class="min-w-0 flex-1">
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
@@ -785,7 +785,7 @@
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
             modalQrCode = new Html5Qrcode("modal-reader");
-            const config = { fps: 10, qrbox: { width: 220, height: 220 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { fps: 10, qrbox: { width: 300, height: 300 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
             modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 const parsed = parseSmartQR(decodedText);
                 if (parsed.code) document.getElementById('itemCode').value = parsed.code;
@@ -875,7 +875,7 @@
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { fps: 10, qrbox: { width: 300, height: 300 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 processScannedCode(decodedText); playBeep();
             }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
@@ -1022,4 +1022,3 @@
     </script>
 </body>
 </html>
-
