@@ -778,6 +778,15 @@
                     } else i++;
                 }
             }
+
+            // Fallback robusto por si el escáner lee todo de corrido sin paréntesis
+            if (!code && clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
+                code = clean.substring(0, 14);
+            }
+            if (!batch && clean.length > 14) {
+                batch = clean.substring(14).split('|')[0].trim();
+            }
+
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
@@ -785,7 +794,7 @@
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
             modalQrCode = new Html5Qrcode("modal-reader");
-            const config = { fps: 10, qrbox: { width: 300, height: 300 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { fps: 15, qrbox: { width: 280, height: 280 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
             modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 const parsed = parseSmartQR(decodedText);
                 if (parsed.code) document.getElementById('itemCode').value = parsed.code;
@@ -875,7 +884,7 @@
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 300, height: 300 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { fps: 15, qrbox: { width: 300, height: 300 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 processScannedCode(decodedText); playBeep();
             }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
@@ -1009,7 +1018,7 @@
         }
 
         function generateBarcodePreview() {
-            const id = document.getElementById('labelItemSelect').value;
+            const id = document.getElementById('labelItemSelect'].value;
             const item = inventoryMap[id];
             if (!item) return;
 
