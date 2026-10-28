@@ -129,8 +129,8 @@
                     </div>
                 </div>
 
-                <!-- CÁMARA WEB Y BOTÓN DE CARGA DE FOTO/GALERÍA -->
-                <div class="space-y-2">
+                <!-- CÁMARA Y BOTÓN DE FOTO NATIVA -->
+                <div class="space-y-2.5">
                     <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
                         <div id="reader" class="w-full h-full"></div>
                         <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
@@ -139,20 +139,20 @@
                         </div>
                     </div>
 
-                    <!-- BOTÓN SÚPER CÓMODO: ESCANEAR SACANDO FOTO CON LA CÁMARA NATIVA -->
+                    <!-- BOTÓN PRINCIPAL: USAR CÁMARA NATIVA CON ZOOM -->
                     <div class="max-w-xs mx-auto">
-                        <label class="w-full bg-slate-700 hover:bg-slate-600 active:scale-95 text-white h-11 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow cursor-pointer transition">
-                            <i class="fa-solid fa-camera-retro text-lab-400 text-base"></i> Sacar foto / Subir etiqueta (Zoom perfecto)
+                        <label class="w-full bg-lab-600 hover:bg-lab-700 active:scale-95 text-white h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition border border-lab-400">
+                            <i class="fa-solid fa-camera-retro text-base"></i> 📷 Sacar foto con Zoom (Nativo)
                             <input type="file" id="qr-file-input" accept="image/*" capture="environment" class="hidden" onchange="scanImageFile(this)">
                         </label>
                     </div>
                 </div>
 
                 <div class="flex gap-2">
-                    <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
-                        <i class="fa-solid fa-camera"></i> Activar Cámara Web
+                    <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow">
+                        <i class="fa-solid fa-video"></i> Activar Cámara Web
                     </button>
-                    <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-11 px-4 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
+                    <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-10 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow">
                         <i class="fa-solid fa-stop"></i> Detener
                     </button>
                 </div>
@@ -741,7 +741,7 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        // Función para leer directamente desde una foto tomada con la cámara nativa (con zoom perfecto)
+        // Lector de archivos de imagen (foto tomada con cámara nativa con zoom perfecto)
         function scanImageFile(e) {
             if (e.target.files && e.target.files.length > 0) {
                 const imageFile = e.target.files[0];
@@ -753,7 +753,7 @@
                         html5QrCodeFile.clear();
                     })
                     .catch(err => {
-                        alert("No se pudo leer el DataMatrix de la foto. Asegurate de enfocarlo bien de cerca.");
+                        alert("No se pudo decodificar el código de la foto. Asegurate de acercar la cámara y enfocar bien el DataMatrix.");
                         html5QrCodeFile.clear();
                     });
             }
