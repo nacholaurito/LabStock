@@ -6,6 +6,8 @@
     <title>LudovicApp stock - Control de Insumos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- Librería ZXing para decodificación avanzada de DataMatrix de alta densidad -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -129,8 +131,8 @@
                     </div>
                 </div>
 
-                <!-- CÁMARA Y BOTÓN DE FOTO NATIVA -->
-                <div class="space-y-2.5">
+                <!-- CÁMARA Y BOTÓN INTELIGENTE DE FOTO CON ZOOM NATIVO -->
+                <div class="space-y-3">
                     <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
                         <div id="reader" class="w-full h-full"></div>
                         <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
@@ -139,11 +141,11 @@
                         </div>
                     </div>
 
-                    <!-- BOTÓN PRINCIPAL CON CÁMARA NATIVA Y ZOOM -->
+                    <!-- BOTÓN MÁGICO: USA LA CÁMARA NATIVA (CON ZOOM Y MACRO REAL) Y LEE AL INSTANTE -->
                     <div class="max-w-xs mx-auto">
                         <label class="w-full bg-lab-600 hover:bg-lab-700 active:scale-95 text-white h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition border border-lab-400">
-                            <i class="fa-solid fa-camera-retro text-base"></i> 📷 Sacar foto con Zoom (Nativo)
-                            <input type="file" id="qr-file-input" accept="image/*" capture="environment" class="hidden" onchange="scanImageFileOptimized(this)">
+                            <i class="fa-solid fa-camera-retro text-base"></i> 📸 Sacar Foto con Zoom (Lectura Automática)
+                            <input type="file" id="qr-file-input" accept="image/*" capture="environment" class="hidden" onchange="decodeWithZXing(this)">
                         </label>
                     </div>
                 </div>
@@ -272,7 +274,7 @@
                 <div class="space-y-1">
                     <label class="block text-xs font-medium text-slate-400">Código / GTIN</label>
                     <div class="flex items-center gap-2">
-                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500 font-mono">
                         <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3.5 h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow shrink-0">
                             <i class="fa-solid fa-camera"></i> Escanear
                         </button>
@@ -317,7 +319,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">N° de Lote</label>
-                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500 font-mono">
                     </div>
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">Cantidad / Stock</label>
@@ -690,91 +692,33 @@
             }
         }
 
-        function parseSmartQR(rawData) {
-            if (!rawData) return { code: '', batch: '', expiry: '' };
-            let code = '', batch = '', expiry = '';
-            let clean = rawData.trim().replace(/[\x1d\u001d\u0000-\u001f]/g, '|');
+        // MOTOR ZXING AVANZADO PARA LEER FOTOS DE CÁMARA NATIVA CON ZOOM PERFECTO
+        async function decodeWithZXing(e) {
+            if (!e.target.files || e.target.files.length === 0) return;
+            const file = e.target.files[0];
 
-            if (clean.includes('(')) {
-                const matches = [...clean.matchAll(/\((\d+)\)([^\(\)]+)/g)];
-                for (const match of matches) {
-                    const ai = match[1], val = match[2].trim();
-                    if (ai === '01') code = val;
-                    else if (ai === '17') {
-                        let yy = '20' + val.substring(0, 2), mm = val.substring(2, 4), dd = val.substring(4, 6);
-                        if (dd === '00' || dd > '31') dd = '01';
-                        expiry = `${yy}-${mm}-${dd}`;
-                    } else if (ai === '10') batch = val.split(' ')[0].replace(/\|/g, '');
-                }
-            }
+            const card = document.getElementById('scanResultCard');
+            const cardContent = document.getElementById('scanResultContent');
+            card.classList.remove('hidden');
+            cardContent.innerHTML = `<span class="text-amber-400 font-semibold animate-pulse">⏳ Procesando foto de la etiqueta...</span>`;
 
-            if (!code || !batch || !expiry) {
-                let raw = clean.replace(/[()\\]/g, ''), i = 0;
-                while (i < raw.length) {
-                    if (raw.startsWith('01', i) && i + 16 <= raw.length) {
-                        code = raw.substring(i + 2, i + 16); i += 16;
-                    } else if (raw.startsWith('17', i) && i + 8 <= raw.length) {
-                        let dateStr = raw.substring(i + 2, i + 8);
-                        if (/^\d{6}$/.test(dateStr)) {
-                            let yy = '20' + dateStr.substring(0, 2), mm = dateStr.substring(2, 4), dd = dateStr.substring(4, 6);
-                            if (dd === '00' || dd > '31') dd = '01';
-                            expiry = `${yy}-${mm}-${dd}`;
-                        }
-                        i += 8;
-                    } else if (raw.startsWith('10', i)) {
-                        i += 2; let sub = raw.substring(i), endIdx = sub.indexOf('|');
-                        if (endIdx === -1) endIdx = sub.length;
-                        batch = sub.substring(0, endIdx).replace(/\|/g, '').trim();
-                        i += endIdx;
-                    } else { i++; }
-                }
-            }
-
-            if (!code && clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
-                code = clean.substring(0, 14);
-            }
-            if (!batch && clean.length > 14) {
-                let possibleBatch = clean.substring(14).split('|')[0].replace(/[^a-zA-Z0-9]/g, '');
-                if (possibleBatch.length > 2) batch = possibleBatch;
-            }
-
-            return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
-        }
-
-        // Lector de foto optimizado con instancia limpia para evitar bloqueos
-        async function scanImageFileOptimized(e) {
-            if (e.target.files && e.target.files.length > 0) {
-                const imageFile = e.target.files[0];
+            try {
+                const reader = new ZXing.BrowserQRCodeReader();
+                const imageUrl = URL.createObjectURL(file);
                 
-                // Mostrar alerta visual de carga
-                const cardContent = document.getElementById('scanResultContent');
-                const card = document.getElementById('scanResultCard');
-                card.classList.remove('hidden');
-                cardContent.innerHTML = `<span class="text-amber-400 font-semibold animate-pulse">⏳ Procesando foto de la etiqueta...</span>`;
-
-                try {
-                    // Creamos un contenedor temporal invisible para procesar la imagen sin fallos de DOM
-                    let tempDivId = 'temp-qr-scanner-' + Date.now();
-                    let div = document.createElement('div');
-                    div.id = tempDivId;
-                    div.style.display = 'none';
-                    document.body.appendChild(div);
-
-                    const fileScanner = new Html5Qrcode(tempDivId);
-                    const decodedText = await fileScanner.scanFile(imageFile, true);
-                    
-                    fileScanner.clear();
-                    div.remove();
-
-                    processScannedCode(decodedText);
+                // Intento principal con lector especializado de alta densidad
+                const result = await reader.decodeFromImageUrl(imageUrl);
+                if (result && result.text) {
                     playBeep();
-                } catch (err) {
-                    cardContent.innerHTML = `<span class="text-rose-400 font-semibold">❌ No se detectó código. Acercá más la cámara y enfocá bien el DataMatrix.</span>`;
+                    processScannedCode(result.text);
+                    card.classList.add('hidden');
+                } else {
+                    throw new Error("No decodificado");
                 }
-                
-                // Limpiar el input para permitir volver a subir la misma foto si se desea
-                e.target.value = '';
+            } catch (err) {
+                cardContent.innerHTML = `<span class="text-rose-400 font-semibold">❌ No se pudo leer. Acercá más la cámara y enfocá bien el DataMatrix.</span>`;
             }
+            e.target.value = '';
         }
 
         function startScanner() {
@@ -864,6 +808,57 @@
                 processScannedCode(document.getElementById('manualScanInput').value);
                 document.getElementById('manualScanInput').value = '';
             }
+        }
+
+        function parseSmartQR(rawData) {
+            if (!rawData) return { code: '', batch: '', expiry: '' };
+            let code = '', batch = '', expiry = '';
+            let clean = rawData.trim().replace(/[\x1d\u001d\u0000-\u001f]/g, '|');
+
+            if (clean.includes('(')) {
+                const matches = [...clean.matchAll(/\((\d+)\)([^\(\)]+)/g)];
+                for (const match of matches) {
+                    const ai = match[1], val = match[2].trim();
+                    if (ai === '01') code = val;
+                    else if (ai === '17') {
+                        let yy = '20' + val.substring(0, 2), mm = val.substring(2, 4), dd = val.substring(4, 6);
+                        if (dd === '00' || dd > '31') dd = '01';
+                        expiry = `${yy}-${mm}-${dd}`;
+                    } else if (ai === '10') batch = val.split(' ')[0].replace(/\|/g, '');
+                }
+            }
+
+            if (!code || !batch || !expiry) {
+                let raw = clean.replace(/[()\\]/g, ''), i = 0;
+                while (i < raw.length) {
+                    if (raw.startsWith('01', i) && i + 16 <= raw.length) {
+                        code = raw.substring(i + 2, i + 16); i += 16;
+                    } else if (raw.startsWith('17', i) && i + 8 <= raw.length) {
+                        let dateStr = raw.substring(i + 2, i + 8);
+                        if (/^\d{6}$/.test(dateStr)) {
+                            let yy = '20' + dateStr.substring(0, 2), mm = dateStr.substring(2, 4), dd = dateStr.substring(4, 6);
+                            if (dd === '00' || dd > '31') dd = '01';
+                            expiry = `${yy}-${mm}-${dd}`;
+                        }
+                        i += 8;
+                    } else if (raw.startsWith('10', i)) {
+                        i += 2; let sub = raw.substring(i), endIdx = sub.indexOf('|');
+                        if (endIdx === -1) endIdx = sub.length;
+                        batch = sub.substring(0, endIdx).replace(/\|/g, '').trim();
+                        i += endIdx;
+                    } else { i++; }
+                }
+            }
+
+            if (!code && clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
+                code = clean.substring(0, 14);
+            }
+            if (!batch && clean.length > 14) {
+                let possibleBatch = clean.substring(14).split('|')[0].replace(/[^a-zA-Z0-9]/g, '');
+                if (possibleBatch.length > 2) batch = possibleBatch;
+            }
+
+            return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
         function processScannedCode(rawData) {
