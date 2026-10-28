@@ -28,13 +28,11 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- HEADER / BARRA SUPERIOR -->
+    <!-- HEADER / BARRA SUPERIOR CON LOGO WEBP -->
     <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
-            <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
-            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
-                <img src="logo.webp" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
-            </div>
+            <!-- LOGO DE LA CAJA (WEBP) -->
+            <img src="caja_png_transparente.png" alt="Logo" class="w-10 h-10 md:w-11 md:h-11 object-cover rounded-xl shadow-md border border-slate-700/85 bg-slate-900 shrink-0">
             <div class="min-w-0 flex-1">
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
                 <p class="text-xs text-slate-400 truncate hidden sm:block">Control de Insumos de Laboratorio</p>
@@ -778,15 +776,6 @@
                     } else i++;
                 }
             }
-
-            // Fallback robusto por si el escáner lee todo de corrido sin paréntesis
-            if (!code && clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
-                code = clean.substring(0, 14);
-            }
-            if (!batch && clean.length > 14) {
-                batch = clean.substring(14).split('|')[0].trim();
-            }
-
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
@@ -794,7 +783,7 @@
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
             modalQrCode = new Html5Qrcode("modal-reader");
-            const config = { fps: 15, qrbox: { width: 280, height: 280 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { fps: 10, qrbox: { width: 220, height: 220 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
             modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 const parsed = parseSmartQR(decodedText);
                 if (parsed.code) document.getElementById('itemCode').value = parsed.code;
@@ -884,7 +873,7 @@
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 15, qrbox: { width: 300, height: 300 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 processScannedCode(decodedText); playBeep();
             }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
@@ -1018,7 +1007,7 @@
         }
 
         function generateBarcodePreview() {
-            const id = document.getElementById('labelItemSelect'].value;
+            const id = document.getElementById('labelItemSelect').value;
             const item = inventoryMap[id];
             if (!item) return;
 
