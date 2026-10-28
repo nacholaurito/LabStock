@@ -46,7 +46,7 @@
                 <i class="fa-solid fa-boxes-stacked"></i> Inventario
             </button>
             <button onclick="switchTab('scan')" id="pc-btn-scan" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-barcode"></i> Escáner HD
+                <i class="fa-solid fa-barcode"></i> Escáner
             </button>
             <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
                 <i class="fa-solid fa-tags"></i> Etiquetas
@@ -115,12 +115,12 @@
             </div>
         </section>
 
-        <!-- 2. PESTAÑA ESCÁNER EN VIVO HD -->
+        <!-- 2. PESTAÑA ESCÁNER EN VIVO -->
         <section id="tab-scan" class="tab-content hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner en Vivo (Alta Definición)
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner en Vivo
                     </h2>
                     <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1 w-full sm:w-auto justify-center">
                         <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs">⚡ Descontar</button>
@@ -129,7 +129,7 @@
                     </div>
                 </div>
 
-                <!-- CÁMARA EN VIVO HD -->
+                <!-- CÁMARA EN VIVO -->
                 <div class="space-y-2.5">
                     <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
                         <div id="reader" class="w-full h-full"></div>
@@ -142,7 +142,7 @@
 
                 <div class="flex gap-2">
                     <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow transition">
-                        <i class="fa-solid fa-video"></i> Activar Cámara HD
+                        <i class="fa-solid fa-video"></i> Activar Cámara
                     </button>
                     <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-11 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow transition">
                         <i class="fa-solid fa-stop"></i> Detener
@@ -723,34 +723,26 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        // ESCÁNER EN VIVO OPTIMIZADO CON RESOLUCIÓN HD (1080p) PARA DATAMATRIX DENSOS
+        // ESCÁNER EN VIVO ESTABLE (Compatible y sin pantallas negras)
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
             
-            const qrboxSize = window.innerWidth < 400 ? 250 : 280;
             const config = { 
-                fps: 30, 
-                qrbox: { width: qrboxSize, height: qrboxSize },
+                fps: 20, 
+                qrbox: { width: 250, height: 250 },
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.DATA_MATRIX, 
                     Html5QrcodeSupportedFormats.QR_CODE, 
                     Html5QrcodeSupportedFormats.CODE_128,
                     Html5QrcodeSupportedFormats.EAN_13
                 ],
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-                aspectRatio: 1.0
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
             };
 
-            // Solicitamos resolución de alta definición para evitar que se empasten los puntos del DataMatrix
-            const constraints = {
-                facingMode: "environment",
-                width: { min: 1280, ideal: 1920, max: 2560 },
-                height: { min: 720, ideal: 1080, max: 1440 }
-            };
-
+            // Usamos la configuración estándar de entorno para prevenir bloqueos de hardware
             html5QrCode.start(
-                constraints, 
+                { facingMode: "environment" }, 
                 config, 
                 (decodedText) => {
                     processScannedCode(decodedText); 
@@ -758,11 +750,8 @@
                 }, 
                 (error) => {}
             ).catch(err => { 
-                // Fallback automático si el teléfono no soporta alta resolución HD
-                html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                    processScannedCode(decodedText); 
-                    playBeep();
-                }, (error) => {});
+                alert("No se pudo iniciar la cámara. Verificá los permisos."); 
+                document.getElementById('scannerPlaceholder').classList.remove('hidden'); 
             });
 
             document.getElementById('startCameraBtn').classList.add('hidden');
@@ -775,7 +764,15 @@
                     document.getElementById('scannerPlaceholder').classList.remove('hidden');
                     document.getElementById('startCameraBtn').classList.remove('hidden');
                     document.getElementById('stopCameraBtn').classList.add('hidden');
+                }).catch(() => {
+                    document.getElementById('scannerPlaceholder').classList.remove('hidden');
+                    document.getElementById('startCameraBtn').classList.remove('hidden');
+                    document.getElementById('stopCameraBtn').classList.add('hidden');
                 });
+            } else {
+                document.getElementById('scannerPlaceholder').classList.remove('hidden');
+                document.getElementById('startCameraBtn').classList.remove('hidden');
+                document.getElementById('stopCameraBtn').classList.add('hidden');
             }
         }
 
