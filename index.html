@@ -52,70 +52,72 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- HEADER / BARRA SUPERIOR -->
-    <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
-        <!-- Logo con archivo caja_png_transparente.png y nombre más grande -->
-        <div class="flex items-center space-x-2.5 min-w-0">
-            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0 w-11 h-11">
-                <img src="caja_png_transparente.png" alt="Logo" class="w-8 h-8 object-contain">
+    <!-- HEADER / BARRA SUPERIOR CON ANCHO ADAPTADO Y ALINEADO -->
+    <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/85 sticky top-0 z-40 shadow-md">
+        <div class="max-w-5xl mx-auto px-4 py-2.5 grid grid-cols-3 items-center">
+            <!-- Logo con archivo caja_png_transparente.png y nombre más grande -->
+            <div class="flex items-center space-x-2.5 min-w-0 justify-start">
+                <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0 w-11 h-11">
+                    <img src="caja_png_transparente.png" alt="Logo" class="w-8 h-8 object-contain">
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp</h1>
+                    <p class="text-[11px] sm:text-xs text-slate-400 truncate">Control de stock</p>
+                </div>
             </div>
-            <div class="min-w-0">
-                <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp</h1>
-                <p class="text-[11px] sm:text-xs text-slate-400 truncate">Control de stock</p>
-            </div>
-        </div>
 
-        <!-- Navegación centralizada (PC) -->
-        <nav class="hidden md:flex items-center justify-center space-x-1 bg-slate-900/60 p-1 rounded-xl border border-slate-700 mx-auto w-fit">
-            <button onclick="switchTab('inventory')" id="pc-btn-inventory" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-lab-400 bg-slate-800 shadow transition flex items-center gap-1.5">
-                <i class="fa-solid fa-boxes-stacked"></i> Inventario
-            </button>
-            <button onclick="switchTab('scan')" id="pc-btn-scan" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-barcode"></i> Escáner
-            </button>
-            <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-tags"></i> Etiquetas
-            </button>
-            <button onclick="switchTab('settings')" id="pc-btn-settings" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-gear"></i> Ajustes
-            </button>
-        </nav>
+            <!-- Navegación centralizada (PC) -->
+            <nav class="hidden md:flex items-center justify-center space-x-1 bg-slate-900/60 p-1 rounded-xl border border-slate-700 mx-auto w-fit">
+                <button onclick="switchTab('inventory')" id="pc-btn-inventory" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-lab-400 bg-slate-800 shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-boxes-stacked"></i> Inventario
+                </button>
+                <button onclick="switchTab('scan')" id="pc-btn-scan" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-barcode"></i> Escáner
+                </button>
+                <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-tags"></i> Etiquetas
+                </button>
+                <button onclick="switchTab('settings')" id="pc-btn-settings" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-gear"></i> Ajustes
+                </button>
+            </nav>
 
-        <!-- Estado de la nube a la derecha -->
-        <div class="flex items-center space-x-2 shrink-0">
-            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-3 py-1 rounded-full text-slate-300">
-                <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                <span id="statusText">Conectando...</span>
+            <!-- Estado de la nube a la derecha -->
+            <div class="flex items-center justify-end space-x-2 shrink-0">
+                <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-3 py-1 rounded-full text-slate-300">
+                    <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="statusText">Conectando...</span>
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <main class="max-w-xl mx-auto p-3.5 md:p-6 space-y-4">
+    <!-- CONTENEDOR PRINCIPAL ALINEADO CON EL HEADER (max-w-5xl) -->
+    <main class="max-w-5xl mx-auto p-4 md:p-6 space-y-4">
 
         <!-- 1. PESTAÑA INVENTARIO -->
         <section id="tab-inventory" class="tab-content space-y-3.5">
-            <div class="grid grid-cols-3 gap-2">
-                <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</p>
-                    <h4 id="kpiTotal" class="text-lg font-extrabold text-white mt-0.5">0</h4>
+            <div class="grid grid-cols-3 gap-3">
+                <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
+                    <h4 id="kpiTotal" class="text-xl font-extrabold text-white mt-1">0</h4>
                 </div>
-                <div onclick="setKpiFilter('expiring')" id="kpiCardExpiring" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-amber-500 transition">
+                <div onclick="setKpiFilter('expiring')" id="kpiCardExpiring" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-amber-500 transition">
                     <p class="text-xs font-bold text-amber-400/90 uppercase tracking-wider">&lt; 30d Vto</p>
-                    <h4 id="kpiExpiring" class="text-lg font-extrabold text-amber-400 mt-0.5">0</h4>
+                    <h4 id="kpiExpiring" class="text-xl font-extrabold text-amber-400 mt-1">0</h4>
                 </div>
-                <div onclick="setKpiFilter('critical')" id="kpiCardCritical" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-rose-500 transition">
+                <div onclick="setKpiFilter('critical')" id="kpiCardCritical" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-rose-500 transition">
                     <p class="text-xs font-bold text-rose-400/90 uppercase tracking-wider">Crítico</p>
-                    <h4 id="kpiCritical" class="text-lg font-extrabold text-rose-400 mt-0.5">0</h4>
+                    <h4 id="kpiCritical" class="text-xl font-extrabold text-rose-400 mt-1">0</h4>
                 </div>
             </div>
 
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm space-y-2.5">
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 shadow-sm space-y-3">
                 <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
-                    <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Buscar reactivo, código o lote..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 h-10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-lab-500">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Buscar reactivo, código o lote..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-3 h-10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-lab-500">
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <select id="typeFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                         <option value="">Todos los tipos</option>
                         <option value="Reactivo">Reactivo</option>
@@ -125,9 +127,9 @@
                     </select>
                     <select id="sectionFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                         <option value="">Todas las secciones</option>
-                        <option value="Inmunología">Inmunología</option>
                         <option value="Química">Química Clínica</option>
                         <option value="Hematología">Hematología</option>
+                        <option value="Inmunología">Inmunología</option>
                         <option value="Bacteriología">Bacteriología</option>
                         <option value="Biología Molecular">Biología Molecular</option>
                     </select>
@@ -142,10 +144,9 @@
             </div>
         </section>
 
-        <!-- 2. PESTAÑA ESCÁNER (ALINEACIÓN PERFECTA) -->
+        <!-- 2. PESTAÑA ESCÁNER -->
         <section id="tab-scan" class="tab-content hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg space-y-4">
-                <!-- Cabecera de la sección de escaneo con alineación simétrica -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <div class="flex flex-col gap-3">
                     <h2 class="text-base font-bold flex items-center gap-2">
                         <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix Industrial
@@ -178,7 +179,7 @@
                     </div>
                 </div>
 
-                <!-- Controles de cámara alineados -->
+                <!-- Controles de cámara -->
                 <div class="flex flex-col gap-2.5">
                     <div class="flex gap-2">
                         <button id="btn-toggle-camera" onclick="appScanner.toggleScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow transition">
@@ -213,7 +214,7 @@
 
         <!-- 3. PESTAÑA ETIQUETAS -->
         <section id="tab-labels" class="tab-content hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg space-y-4">
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <h2 class="text-base font-bold flex items-center gap-2">
                     <i class="fa-solid fa-print text-lab-500"></i> Generador de Etiquetas
                 </h2>
@@ -236,7 +237,7 @@
 
         <!-- 4. PESTAÑA AJUSTES -->
         <section id="tab-settings" class="tab-content hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg space-y-3.5">
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-3.5">
                 <h2 class="text-base font-bold flex items-center gap-2 text-white">
                     <i class="fa-solid fa-gear text-lab-500"></i> Catálogo Maestro de Nombres
                 </h2>
@@ -663,9 +664,9 @@
 
         function setKpiFilter(filterType) {
             activeKpiFilter = activeKpiFilter === filterType ? 'all' : filterType;
-            document.getElementById('kpiCardAll').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'all' ? 'border-lab-500 ring-1 ring-lab-500' : 'border-slate-700/70 hover:border-lab-500'}`;
-            document.getElementById('kpiCardExpiring').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'expiring' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700/70 hover:border-amber-500'}`;
-            document.getElementById('kpiCardCritical').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'critical' ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700/70 hover:border-rose-500'}`;
+            document.getElementById('kpiCardAll').className = `bg-slate-800/90 rounded-xl p-3 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'all' ? 'border-lab-500 ring-1 ring-lab-500' : 'border-slate-700/70 hover:border-lab-500'}`;
+            document.getElementById('kpiCardExpiring').className = `bg-slate-800/90 rounded-xl p-3 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'expiring' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700/70 hover:border-amber-500'}`;
+            document.getElementById('kpiCardCritical').className = `bg-slate-800/90 rounded-xl p-3 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'critical' ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700/70 hover:border-rose-500'}`;
             filterInventory();
         }
 
@@ -821,7 +822,7 @@
                 let lotsHtml = '';
                 group.lots.forEach(lot => {
                     lotsHtml += `
-                        <div class="bg-slate-900/90 p-3 rounded-lg border border-slate-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">
+                        <div class="bg-slate-900/90 p-3.5 rounded-lg border border-slate-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">
                             <div class="space-y-0.5 text-sm">
                                 <div class="text-white font-semibold flex items-center gap-2">
                                     <span>Lote: <span class="font-mono text-lab-400 font-bold">${lot.batch}</span></span>
@@ -842,7 +843,7 @@
                 });
 
                 card.innerHTML = `
-                    <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-3.5 grid grid-cols-12 gap-2 items-center cursor-pointer hover:bg-slate-750 transition">
+                    <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-4 grid grid-cols-12 gap-2 items-center cursor-pointer hover:bg-slate-750 transition">
                         <div class="col-span-8 space-y-1">
                             <span class="text-xs px-2 py-0.5 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800 font-semibold">${group.type}</span>
                             <h3 class="text-base font-bold text-white leading-snug">${group.name}</h3>
@@ -852,7 +853,7 @@
                             <div>${headerBadge}</div>
                         </div>
                     </div>
-                    <div id="acc-${CSS.escape(name)}" class="${isOpen ? '' : 'hidden'} p-3 bg-slate-900/60 border-t border-slate-700/60 space-y-2">
+                    <div id="acc-${CSS.escape(name)}" class="${isOpen ? '' : 'hidden'} p-3.5 bg-slate-900/60 border-t border-slate-700/60 space-y-2.5">
                         ${lotsHtml}
                     </div>`;
                 container.appendChild(card);
