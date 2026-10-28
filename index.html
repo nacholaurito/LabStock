@@ -139,11 +139,11 @@
                         </div>
                     </div>
 
-                    <!-- BOTÓN PRINCIPAL: USAR CÁMARA NATIVA CON ZOOM -->
+                    <!-- BOTÓN PRINCIPAL CON CÁMARA NATIVA Y ZOOM -->
                     <div class="max-w-xs mx-auto">
                         <label class="w-full bg-lab-600 hover:bg-lab-700 active:scale-95 text-white h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition border border-lab-400">
                             <i class="fa-solid fa-camera-retro text-base"></i> 📷 Sacar foto con Zoom (Nativo)
-                            <input type="file" id="qr-file-input" accept="image/*" capture="environment" class="hidden" onchange="scanImageFile(this)">
+                            <input type="file" id="qr-file-input" accept="image/*" capture="environment" class="hidden" onchange="scanImageFileOptimized(this)">
                         </label>
                     </div>
                 </div>
@@ -741,21 +741,39 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        // Lector de archivos de imagen (foto tomada con cámara nativa con zoom perfecto)
-        function scanImageFile(e) {
+        // Lector de foto optimizado con instancia limpia para evitar bloqueos
+        async function scanImageFileOptimized(e) {
             if (e.target.files && e.target.files.length > 0) {
                 const imageFile = e.target.files[0];
-                const html5QrCodeFile = new Html5Qrcode("reader");
-                html5QrCodeFile.scanFile(imageFile, true)
-                    .then(decodedText => {
-                        processScannedCode(decodedText);
-                        playBeep();
-                        html5QrCodeFile.clear();
-                    })
-                    .catch(err => {
-                        alert("No se pudo decodificar el código de la foto. Asegurate de acercar la cámara y enfocar bien el DataMatrix.");
-                        html5QrCodeFile.clear();
-                    });
+                
+                // Mostrar alerta visual de carga
+                const cardContent = document.getElementById('scanResultContent');
+                const card = document.getElementById('scanResultCard');
+                card.classList.remove('hidden');
+                cardContent.innerHTML = `<span class="text-amber-400 font-semibold animate-pulse">⏳ Procesando foto de la etiqueta...</span>`;
+
+                try {
+                    // Creamos un contenedor temporal invisible para procesar la imagen sin fallos de DOM
+                    let tempDivId = 'temp-qr-scanner-' + Date.now();
+                    let div = document.createElement('div');
+                    div.id = tempDivId;
+                    div.style.display = 'none';
+                    document.body.appendChild(div);
+
+                    const fileScanner = new Html5Qrcode(tempDivId);
+                    const decodedText = await fileScanner.scanFile(imageFile, true);
+                    
+                    fileScanner.clear();
+                    div.remove();
+
+                    processScannedCode(decodedText);
+                    playBeep();
+                } catch (err) {
+                    cardContent.innerHTML = `<span class="text-rose-400 font-semibold">❌ No se detectó código. Acercá más la cámara y enfocá bien el DataMatrix.</span>`;
+                }
+                
+                // Limpiar el input para permitir volver a subir la misma foto si se desea
+                e.target.value = '';
             }
         }
 
