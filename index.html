@@ -137,7 +137,7 @@
 
                 <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
                     <div id="reader" class="w-full h-full"></div>
-                    <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
+                    <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900 pointer-events-none z-10">
                         <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
                         <p class="text-xs">Cámara inactiva</p>
                     </div>
@@ -552,7 +552,9 @@
             });
 
             if (tabId === 'labels') populateLabelSelect();
-            if (tabId !== 'scan' && html5QrCode && html5QrCode.isScanning) stopScanner();
+            if (tabId !== 'scan' && html5QrCode) {
+                stopScanner();
+            }
         }
 
         function getTypeBadgeStyle(type) {
@@ -784,21 +786,42 @@
         function startModalScanner() {
             const container = document.getElementById('modalReaderContainer');
             container.classList.remove('hidden');
+            if (modalQrCode) {
+                try { modalQrCode.stop().catch(() => {}); } catch(e) {}
+            }
             modalQrCode = new Html5Qrcode("modal-reader");
-            const config = { fps: 10, qrbox: { width: 220, height: 220 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            const config = { 
+                fps: 15, 
+                qrbox: { width: 220, height: 220 }, 
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128
+                ] 
+            };
             modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 const parsed = parseSmartQR(decodedText);
                 if (parsed.code) document.getElementById('itemCode').value = parsed.code;
                 if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
                 if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
-                playBeep(); stopModalScanner();
-            }, (error) => {}).catch(err => { alert("Error de cámara."); container.classList.add('hidden'); });
+                playBeep(); 
+                stopModalScanner();
+            }, (error) => {}).catch(err => { 
+                console.warn("Fallo de cámara modal:", err);
+                container.classList.add('hidden'); 
+            });
         }
 
         function stopModalScanner() {
-            if (modalQrCode && modalQrCode.isScanning) {
-                modalQrCode.stop().then(() => document.getElementById('modalReaderContainer').classList.add('hidden')).catch(() => document.getElementById('modalReaderContainer').classList.add('hidden'));
-            } else document.getElementById('modalReaderContainer').classList.add('hidden');
+            if (modalQrCode) {
+                modalQrCode.stop().then(() => {
+                    document.getElementById('modalReaderContainer').classList.add('hidden');
+                }).catch(() => {
+                    document.getElementById('modalReaderContainer').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('modalReaderContainer').classList.add('hidden');
+            }
         }
 
         function openNewItemModal(prefillData = null) {
@@ -872,26 +895,66 @@
             document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
         }
 
-        function startScanner() {
-            document.getElementById('scannerPlaceholder').classList.add('hidden');
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                processScannedCode(decodedText); playBeep();
-            }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
-            document.getElementById('startCameraBtn').classList.add('hidden');
-            document.getElementById('stopCameraBtn').classList.remove('hidden');
-        }
+        async function startScanner() {
+            const placeholder = document.getElementById('scannerPlaceholder');
+            placeholder.classList.add('hidden');
+            
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); } catch(e) {}
+            }
 
-        function stopScanner() {
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('scannerPlaceholder').classList.remove('hidden');
-                    document.getElementById('startCameraBtn').classList.remove('hidden');
-                    document.getElementById('stopCameraBtn').classList.add('hidden');
-                });
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { 
+                fps: 15, 
+                qrbox: { width: 250, height: 250 }, 
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128
+                ] 
+            };
+
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    (decodedText) => {
+                        processScannedCode(decodedText); 
+                        playBeep();
+                    }, 
+                    (error) => {}
+                );
+                document.getElementById('startCameraBtn').classList.add('hidden');
+                document.getElementById('stopCameraBtn').classList.remove('hidden');
+            } catch (err) {
+                console.error("Error al iniciar cámara principal:", err);
+                placeholder.classList.remove('hidden');
+                alert("No se pudo acceder a la cámara. Revisa permisos o HTTPS.");
             }
         }
+
+        async function stopScanner() {
+            if (html5QrCode) {
+                try {
+                    if (html5QrCode.isScanning) {
+                        await html5QrCode.stop();
+                    }
+                } catch (e) {
+                    console.warn("Error deteniendo escáner:", e);
+                }
+            }
+            document.getElementById('scannerPlaceholder').classList.remove('hidden');
+            document.getElementById('startCameraBtn').classList.remove('hidden');
+            document.getElementById('stopCameraBtn').classList.add('hidden');
+        }
+
+        // Control de ciclo de vida para evitar pantallas negras al minimizar/cambiar de pestaña
+        window.addEventListener('visibilitychange', async () => {
+            if (document.hidden) {
+                await stopScanner();
+                stopModalScanner();
+            }
+        });
 
         function handleManualScanKey(event) {
             if (event.key === 'Enter') {
