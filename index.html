@@ -52,16 +52,16 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- HEADER / BARRA SUPERIOR (CENTRAMOS LA NAVEGACIÓN PC) -->
+    <!-- HEADER / BARRA SUPERIOR -->
     <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 grid grid-cols-3 items-center shadow-md">
-        <!-- Logo con caja institucional -->
-        <div class="flex items-center space-x-3 min-w-0 justify-start">
-            <div class="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-md flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-flask-vial text-lab-500 text-lg"></i>
+        <!-- Logo con archivo caja_png_transparente.png y texto visible en móvil -->
+        <div class="flex items-center space-x-2.5 min-w-0 justify-start">
+            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0 w-10 h-10">
+                <img src="caja_png_transparente.png" alt="Logo" class="w-7 h-7 object-contain">
             </div>
-            <div class="min-w-0 hidden sm:block">
-                <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
-                <p class="text-xs text-slate-400 truncate">Control de Insumos</p>
+            <div class="min-w-0">
+                <h1 class="text-xs sm:text-base font-bold tracking-tight text-white truncate leading-tight">LudovicApp</h1>
+                <p class="text-[10px] sm:text-xs text-slate-400 truncate">Stock Insumos</p>
             </div>
         </div>
 
@@ -83,9 +83,9 @@
 
         <!-- Estado de la nube a la derecha -->
         <div class="flex items-center justify-end space-x-2 shrink-0">
-            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-3 py-1 rounded-full text-slate-300">
+            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-2.5 py-1 rounded-full text-slate-300">
                 <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                <span id="statusText">Conectando...</span>
+                <span id="statusText" class="hidden sm:inline">Conectando...</span>
             </div>
         </div>
     </header>
@@ -142,17 +142,18 @@
             </div>
         </section>
 
-        <!-- 2. PESTAÑA ESCÁNER (SIN DATOS TÉCNICOS DE ORIGEN/RESOLUCIÓN) -->
+        <!-- 2. PESTAÑA ESCÁNER -->
         <section id="tab-scan" class="tab-content hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 class="text-base font-bold flex items-center gap-2">
                         <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix Industrial
                     </h2>
-                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1 w-full sm:w-auto justify-center">
-                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs">⚡ Descontar</button>
-                        <button onclick="setScanMode('add')" id="modeBtnAdd" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs">➕ Agregar</button>
-                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs">🔍 Consultar</button>
+                    <!-- Modos de escaneo alineados en 3 columnas fijas (sin saltos de renglón) -->
+                    <div class="grid grid-cols-3 bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1 w-full sm:w-auto">
+                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="px-2 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs text-center truncate">⚡ Descontar</button>
+                        <button onclick="setScanMode('add')" id="modeBtnAdd" class="px-2 py-1.5 rounded-md text-slate-400 font-medium transition text-xs text-center truncate">➕ Agregar</button>
+                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="px-2 py-1.5 rounded-md text-slate-400 font-medium transition text-xs text-center truncate">🔍 Consultar</button>
                     </div>
                 </div>
 
@@ -256,11 +257,6 @@
         </section>
 
     </main>
-
-    <!-- BOTÓN FLOTANTE NUEVO ÍTEM (MÓVIL) -->
-    <button onclick="openNewItemModal()" class="fixed bottom-16 right-4 z-40 md:hidden bg-lab-600 hover:bg-lab-700 active:scale-95 text-white w-13 h-13 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all border border-lab-400 p-3.5">
-        <i class="fa-solid fa-plus"></i>
-    </button>
 
     <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL) -->
     <nav class="fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur-md border-t border-slate-700/80 px-2 py-1.5 flex justify-around items-center z-50 md:hidden shadow-2xl">
@@ -1009,9 +1005,9 @@
 
         function setScanMode(mode) {
             scanMode = mode;
-            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
-            document.getElementById('modeBtnAdd').className = mode === 'add' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
-            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
+            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "px-2 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs text-center truncate" : "px-2 py-1.5 rounded-md text-slate-400 font-medium transition text-xs text-center truncate";
+            document.getElementById('modeBtnAdd').className = mode === 'add' ? "px-2 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs text-center truncate" : "px-2 py-1.5 rounded-md text-slate-400 font-medium transition text-xs text-center truncate";
+            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "px-2 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs text-center truncate" : "px-2 py-1.5 rounded-md text-slate-400 font-medium transition text-xs text-center truncate";
         }
 
         function openNewItemModal(prefillData = null) {
