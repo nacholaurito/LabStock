@@ -129,25 +129,28 @@
                     </div>
                 </div>
 
-                <!-- CONTENEDOR DE CÁMARA CON BOTONES DE ZOOM FLOTANTES -->
-                <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
-                    <div id="reader" class="w-full h-full"></div>
-                    
-                    <!-- Botones de Zoom flotantes -->
-                    <div id="zoomControls" class="hidden absolute top-2 right-2 flex flex-col gap-1 z-20 bg-slate-900/80 p-1 rounded-lg border border-slate-700 backdrop-blur-sm">
-                        <button onclick="adjustZoom(0.5)" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm flex items-center justify-center shadow" title="Acercar Zoom">+</button>
-                        <button onclick="adjustZoom(-0.5)" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm flex items-center justify-center shadow" title="Alejar Zoom">-</button>
+                <!-- CÁMARA WEB Y BOTÓN DE CARGA DE FOTO/GALERÍA -->
+                <div class="space-y-2">
+                    <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
+                        <div id="reader" class="w-full h-full"></div>
+                        <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
+                            <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
+                            <p class="text-xs">Cámara inactiva</p>
+                        </div>
                     </div>
 
-                    <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
-                        <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
-                        <p class="text-xs">Cámara inactiva</p>
+                    <!-- BOTÓN SÚPER CÓMODO: ESCANEAR SACANDO FOTO CON LA CÁMARA NATIVA -->
+                    <div class="max-w-xs mx-auto">
+                        <label class="w-full bg-slate-700 hover:bg-slate-600 active:scale-95 text-white h-11 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow cursor-pointer transition">
+                            <i class="fa-solid fa-camera-retro text-lab-400 text-base"></i> Sacar foto / Subir etiqueta (Zoom perfecto)
+                            <input type="file" id="qr-file-input" accept="image/*" capture="environment" class="hidden" onchange="scanImageFile(this)">
+                        </label>
                     </div>
                 </div>
 
                 <div class="flex gap-2">
                     <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
-                        <i class="fa-solid fa-camera"></i> Activar Cámara
+                        <i class="fa-solid fa-camera"></i> Activar Cámara Web
                     </button>
                     <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-11 px-4 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
                         <i class="fa-solid fa-stop"></i> Detener
@@ -335,7 +338,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT PRINCIPAL CON CONTROL DE ZOOM -->
+    <!-- SCRIPT PRINCIPAL -->
     <script>
         let inventoryMap = {}; 
         let inventoryArray = []; 
@@ -346,7 +349,6 @@
 
         let html5QrCode = null;
         let modalQrCode = null;
-        let currentZoom = 1.0;
         let scanMode = 'deduct';
         let dbRef = null;
         let catalogRef = null;
@@ -739,27 +741,26 @@
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        // Control de Zoom interactivo en tiempo real
-        function adjustZoom(delta) {
-            currentZoom = Math.max(1.0, Math.min(4.0, currentZoom + delta));
-            try {
-                if (html5QrCode && html5QrCode.isScanning) {
-                    const tracks = html5QrCode.getRunningTrack();
-                    if (tracks && tracks.getCapabilities) {
-                        const caps = tracks.getCapabilities();
-                        if (caps.zoom) {
-                            tracks.applyConstraints({ advanced: [{ zoom: currentZoom }] });
-                        }
-                    }
-                }
-            } catch(e) {}
+        // Función para leer directamente desde una foto tomada con la cámara nativa (con zoom perfecto)
+        function scanImageFile(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                const imageFile = e.target.files[0];
+                const html5QrCodeFile = new Html5Qrcode("reader");
+                html5QrCodeFile.scanFile(imageFile, true)
+                    .then(decodedText => {
+                        processScannedCode(decodedText);
+                        playBeep();
+                        html5QrCodeFile.clear();
+                    })
+                    .catch(err => {
+                        alert("No se pudo leer el DataMatrix de la foto. Asegurate de enfocarlo bien de cerca.");
+                        html5QrCodeFile.clear();
+                    });
+            }
         }
 
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
-            document.getElementById('zoomControls').classList.remove('hidden');
-            currentZoom = 1.5; // Zoom inicial recomendado para códigos pequeños
-
             html5QrCode = new Html5Qrcode("reader");
             const config = { 
                 fps: 20, 
@@ -781,34 +782,62 @@
                     playBeep();
                 }, 
                 (error) => {}
-            ).then(() => {
-                try {
-                    const tracks = html5QrCode.getRunningTrack();
-                    if (tracks && tracks.getCapabilities) {
-                        const caps = tracks.getCapabilities();
-                        if (caps.zoom) {
-                            tracks.applyConstraints({ advanced: [{ zoom: currentZoom }] });
-                        }
-                    }
-                } catch(e) {}
-            }).catch(err => { 
+            ).catch(err => { 
                 alert("No se pudo iniciar la cámara."); 
                 document.getElementById('scannerPlaceholder').classList.remove('hidden'); 
-                document.getElementById('zoomControls').classList.add('hidden');
             });
 
             document.getElementById('startCameraBtn').classList.add('hidden');
             document.getElementById('stopCameraBtn').classList.remove('hidden');
         }
 
+        function startModalScanner() {
+            const container = document.getElementById('modalReaderContainer');
+            container.classList.remove('hidden');
+            modalQrCode = new Html5Qrcode("modal-reader");
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 250, height: 250 },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128
+                ],
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            };
+
+            modalQrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    const parsed = parseSmartQR(decodedText);
+                    if (parsed.code) document.getElementById('itemCode').value = parsed.code;
+                    if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
+                    if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
+                    playBeep(); 
+                    stopModalScanner();
+                }, 
+                (error) => {}
+            ).catch(err => { 
+                container.classList.add('hidden'); 
+            });
+        }
+
         function stopScanner() {
-            document.getElementById('zoomControls').classList.add('hidden');
             if (html5QrCode && html5QrCode.isScanning) {
                 html5QrCode.stop().then(() => {
                     document.getElementById('scannerPlaceholder').classList.remove('hidden');
                     document.getElementById('startCameraBtn').classList.remove('hidden');
                     document.getElementById('stopCameraBtn').classList.add('hidden');
                 });
+            }
+        }
+
+        function stopModalScanner() {
+            if (modalQrCode && modalQrCode.isScanning) {
+                modalQrCode.stop().then(() => document.getElementById('modalReaderContainer').classList.add('hidden')).catch(() => document.getElementById('modalReaderContainer').classList.add('hidden'));
+            } else {
+                document.getElementById('modalReaderContainer').classList.add('hidden');
             }
         }
 
