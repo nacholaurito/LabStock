@@ -31,9 +31,9 @@
     <!-- HEADER / BARRA SUPERIOR -->
     <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
-            <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
-            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
-                <img src="caja_png_transparente.png" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
+            <div class="bg-slate-900 border border-slate-700 w-10 h-10 rounded-xl shadow-md flex items-center justify-center shrink-0 overflow-hidden">
+                <img src="logo.webp" alt="Logo" class="w-7 h-7 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="w-full h-full items-center justify-center text-lab-500 text-base hidden"><i class="fa-solid fa-boxes-stacked"></i></div>
             </div>
             <div class="min-w-0 flex-1">
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
@@ -46,7 +46,7 @@
                 <i class="fa-solid fa-boxes-stacked"></i> Inventario
             </button>
             <button onclick="switchTab('scan')" id="pc-btn-scan" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-barcode"></i> Escáner
+                <i class="fa-solid fa-barcode"></i> Escáner HD
             </button>
             <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
                 <i class="fa-solid fa-tags"></i> Etiquetas
@@ -69,8 +69,6 @@
 
         <!-- 1. PESTAÑA INVENTARIO -->
         <section id="tab-inventory" class="tab-content space-y-3.5">
-            
-            <!-- TARJETAS DE RESUMEN CLICKEABLES (KPIs FILTRADORES) -->
             <div class="grid grid-cols-3 gap-2">
                 <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
@@ -86,7 +84,6 @@
                 </div>
             </div>
 
-            <!-- BARRA DE BÚSQUEDA Y FILTROS -->
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm space-y-2.5">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
@@ -111,22 +108,19 @@
                 </div>
             </div>
 
-            <!-- CONTENEDOR AGRUPADO EN COLUMNAS (ACORDEÓN) -->
-            <div id="inventoryGroupedContainer" class="space-y-2.5">
-            </div>
-
+            <div id="inventoryGroupedContainer" class="space-y-2.5"></div>
             <div id="emptyInventory" class="hidden p-8 text-center text-slate-400">
                 <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-600"></i>
                 <p class="text-base font-medium">No se encontraron ítems con estos filtros</p>
             </div>
         </section>
 
-        <!-- 2. PESTAÑA ESCÁNER -->
+        <!-- 2. PESTAÑA ESCÁNER EN VIVO HD -->
         <section id="tab-scan" class="tab-content hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix / GS1
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner en Vivo (Alta Definición)
                     </h2>
                     <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1 w-full sm:w-auto justify-center">
                         <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs">⚡ Descontar</button>
@@ -135,27 +129,30 @@
                     </div>
                 </div>
 
-                <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
-                    <div id="reader" class="w-full h-full"></div>
-                    <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
-                        <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
-                        <p class="text-xs">Cámara inactiva</p>
+                <!-- CÁMARA EN VIVO HD -->
+                <div class="space-y-2.5">
+                    <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
+                        <div id="reader" class="w-full h-full"></div>
+                        <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
+                            <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
+                            <p class="text-xs">Cámara inactiva</p>
+                        </div>
                     </div>
                 </div>
 
                 <div class="flex gap-2">
-                    <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
-                        <i class="fa-solid fa-camera"></i> Activar Cámara
+                    <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow transition">
+                        <i class="fa-solid fa-video"></i> Activar Cámara HD
                     </button>
-                    <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-11 px-4 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
+                    <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-11 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow transition">
                         <i class="fa-solid fa-stop"></i> Detener
                     </button>
                 </div>
 
                 <div class="pt-3 border-t border-slate-700 space-y-1.5">
-                    <label class="block text-xs font-medium text-slate-400">Entrada manual / Pistola USB</label>
+                    <label class="block text-xs font-medium text-slate-400">Entrada manual o respaldo</label>
                     <div class="flex gap-2">
-                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí código o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí código o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500 font-mono">
                         <button onclick="processScannedCode(document.getElementById('manualScanInput').value); document.getElementById('manualScanInput').value='';" class="bg-slate-700 hover:bg-slate-600 text-white px-4 h-10 rounded-lg text-xs font-semibold shrink-0">Procesar</button>
                     </div>
                 </div>
@@ -175,8 +172,7 @@
                 </h2>
                 <div class="space-y-1">
                     <label class="block text-xs font-medium text-slate-400">Seleccionar Reactivo</label>
-                    <select id="labelItemSelect" onchange="generateBarcodePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
-                    </select>
+                    <select id="labelItemSelect" onchange="generateBarcodePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500"></select>
                 </div>
                 <div id="labelPreviewContainer" class="bg-white text-slate-900 p-4 rounded-lg flex flex-col items-center justify-center border border-slate-300 shadow-inner">
                     <p class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">LABORATORIO CLÍNICO</p>
@@ -197,21 +193,17 @@
                     <i class="fa-solid fa-gear text-lab-500"></i> Catálogo Maestro de Nombres
                 </h2>
                 <p class="text-xs text-slate-400">Agregá los nombres oficiales para mantener la homogeneidad.</p>
-                
                 <div class="flex gap-2">
                     <input type="text" id="newCatalogName" placeholder="Ej: Architect rHTLV-I/II" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                     <button onclick="addCatalogName()" class="bg-lab-600 hover:bg-lab-700 text-white px-4 h-10 rounded-lg text-xs font-semibold shadow flex items-center gap-1 shrink-0">
                         <i class="fa-solid fa-plus"></i> Agregar
                     </button>
                 </div>
-
                 <div class="border border-slate-700 rounded-lg overflow-hidden bg-slate-900 max-h-64 overflow-y-auto">
-                    <ul id="catalogList" class="divide-y divide-slate-800 text-sm">
-                    </ul>
+                    <ul id="catalogList" class="divide-y divide-slate-800 text-sm"></ul>
                 </div>
             </div>
         </section>
-
     </main>
 
     <!-- BOTÓN FLOTANTE NUEVO ÍTEM (MÓVIL) -->
@@ -227,7 +219,7 @@
         </button>
         <button onclick="switchTab('scan')" id="mob-btn-scan" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition px-3 py-1">
             <i class="fa-solid fa-barcode text-lg"></i>
-            <span class="text-xs font-medium mt-0.5">Escanear</span>
+            <span class="text-xs font-medium mt-0.5">Escáner</span>
         </button>
         <button onclick="switchTab('labels')" id="mob-btn-labels" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition px-3 py-1">
             <i class="fa-solid fa-tags text-lg"></i>
@@ -246,8 +238,7 @@
                 <h3 id="scanModalTitle" class="text-base font-bold text-white">Confirmar Movimiento</h3>
                 <button onclick="closeScanActionModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div id="scanModalBody" class="space-y-1.5 text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700">
-            </div>
+            <div id="scanModalBody" class="space-y-1.5 text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700"></div>
             <div id="qtyContainer" class="space-y-1">
                 <label id="qtyLabel" class="block text-xs font-medium text-slate-400">Cantidad a agregar</label>
                 <input type="number" id="scanModalQty" min="1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-11 text-lg font-bold text-center text-slate-100 focus:outline-none focus:border-lab-500">
@@ -270,19 +261,9 @@
             </div>
             <form id="itemForm" onsubmit="saveItem(event)" class="space-y-3">
                 <input type="hidden" id="editKey" value="">
-                
                 <div class="space-y-1">
                     <label class="block text-xs font-medium text-slate-400">Código / GTIN</label>
-                    <div class="flex items-center gap-2">
-                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
-                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3.5 h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow shrink-0">
-                            <i class="fa-solid fa-camera"></i> Escanear
-                        </button>
-                    </div>
-                    <div id="modalReaderContainer" class="hidden aspect-square max-w-xs mx-auto bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
-                        <div id="modal-reader" class="w-full h-full"></div>
-                        <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow z-10">Cerrar</button>
-                    </div>
+                    <input type="text" id="itemCode" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500 font-mono">
                 </div>
 
                 <div class="relative space-y-1" id="nameComboboxContainer">
@@ -291,9 +272,7 @@
                         <input type="text" id="itemName" required autocomplete="off" oninput="handleNameSearchInput(event)" onfocus="handleNameSearchInput(event)" placeholder="Escribí para buscar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
                         <i class="fa-solid fa-chevron-down absolute right-3.5 top-3.5 text-xs text-slate-500 pointer-events-none"></i>
                     </div>
-
-                    <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
-                    </div>
+                    <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -321,7 +300,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">N° de Lote</label>
-                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500 font-mono">
                     </div>
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-400">Cantidad / Stock</label>
@@ -352,11 +331,9 @@
         let activeKpiFilter = 'all';
 
         let html5QrCode = null;
-        let modalQrCode = null;
         let scanMode = 'deduct';
         let dbRef = null;
         let catalogRef = null;
-        
         let activeScanItem = null;
         let activeScanParsed = null;
 
@@ -400,7 +377,6 @@
                     }));
                     updateCatalogUI();
                 });
-
             } catch (e) {
                 updateCloudStatus('error', 'Error');
             }
@@ -421,20 +397,16 @@
 
         function setKpiFilter(filterType) {
             activeKpiFilter = activeKpiFilter === filterType ? 'all' : filterType;
-            
             document.getElementById('kpiCardAll').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'all' ? 'border-lab-500 ring-1 ring-lab-500' : 'border-slate-700/70 hover:border-lab-500'}`;
             document.getElementById('kpiCardExpiring').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'expiring' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700/70 hover:border-amber-500'}`;
             document.getElementById('kpiCardCritical').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'critical' ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700/70 hover:border-rose-500'}`;
-
             filterInventory();
         }
 
         function updateKPIs(data) {
             const today = new Date();
             today.setHours(0,0,0,0);
-
-            let expiringCount = 0;
-            let criticalCount = 0;
+            let expiringCount = 0, criticalCount = 0;
 
             data.forEach(item => {
                 if (item.stock <= 3) criticalCount++;
@@ -444,7 +416,6 @@
                     if (diffDays <= 30) expiringCount++;
                 }
             });
-
             document.getElementById('kpiTotal').innerText = data.length;
             document.getElementById('kpiExpiring').innerText = expiringCount;
             document.getElementById('kpiCritical').innerText = criticalCount;
@@ -466,12 +437,7 @@
                 if (i.name && !allNames.includes(i.name)) allNames.push(i.name);
             });
 
-            if (allNames.length === 0) {
-                allNames = ["Architect rHTLV-I/II", "Virclia Parvovirus IgM Monotest", "Optilite IgG Kit", "Glucosa GOD-PAP", "Colesterol Total"];
-            }
-
             const matches = allNames.filter(n => n.toLowerCase().includes(query));
-
             if (matches.length === 0) {
                 dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Usar: <b class="text-white">"${input.value}"</b></div>`;
                 dropdown.classList.remove('hidden');
@@ -481,14 +447,11 @@
             dropdown.innerHTML = '';
             matches.forEach(name => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = "px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-lab-400 cursor-pointer font-medium transition flex items-center justify-between";
-                const regEx = new RegExp(`(${query})`, 'gi');
-                const highlighted = name.replace(regEx, `<span class="text-lab-400 font-bold">$1</span>`);
-                itemDiv.innerHTML = `<span>${highlighted}</span>`;
+                itemDiv.className = "px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-lab-400 cursor-pointer font-medium transition";
+                itemDiv.innerText = name;
                 itemDiv.onclick = () => selectNameFromDropdown(name);
                 dropdown.appendChild(itemDiv);
             });
-
             dropdown.classList.remove('hidden');
         }
 
@@ -509,8 +472,6 @@
             const input = document.getElementById('newCatalogName');
             const name = input.value.trim();
             if (!name) return;
-            const exists = catalogArray.some(item => item.name.toLowerCase() === name.toLowerCase());
-            if (exists) { alert('Ya existe.'); return; }
             if (catalogRef) { catalogRef.push({ name: name }); input.value = ''; }
         }
 
@@ -557,15 +518,10 @@
 
         function getTypeBadgeStyle(type) {
             switch(type) {
-                case 'Calibrador':
-                    return 'bg-sky-950 text-sky-400 border-sky-800/80';
-                case 'Control':
-                    return 'bg-purple-950 text-purple-400 border-purple-800/80';
-                case 'Consumible':
-                    return 'bg-amber-950 text-amber-400 border-amber-800/80';
-                case 'Reactivo':
-                default:
-                    return 'bg-emerald-950 text-emerald-400 border-emerald-800/80';
+                case 'Calibrador': return 'bg-sky-950 text-sky-400 border-sky-800/80';
+                case 'Control': return 'bg-purple-950 text-purple-400 border-purple-800/80';
+                case 'Consumible': return 'bg-amber-950 text-amber-400 border-amber-800/80';
+                case 'Reactivo': default: return 'bg-emerald-950 text-emerald-400 border-emerald-800/80';
             }
         }
 
@@ -599,13 +555,7 @@
             kpiFiltered.forEach(item => {
                 const name = item.name || 'Sin Nombre';
                 if (!grouped[name]) {
-                    grouped[name] = {
-                        name: name,
-                        type: item.type || 'Reactivo',
-                        section: item.section || 'Química',
-                        totalStock: 0,
-                        lots: []
-                    };
+                    grouped[name] = { name: name, type: item.type || 'Reactivo', section: item.section || 'Química', totalStock: 0, lots: [] };
                 }
                 grouped[name].totalStock += (parseInt(item.stock) || 0);
                 grouped[name].lots.push(item);
@@ -613,18 +563,14 @@
 
             Object.keys(grouped).forEach(name => {
                 const group = grouped[name];
-                
-                let minDays = 999999;
-                let hasExpired = false;
+                let minDays = 999999, hasExpired = false;
 
                 group.lots.forEach(lot => {
                     if (lot.expiry) {
                         const expDate = new Date(lot.expiry + 'T00:00:00');
                         const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
                         if (diffDays < 0) hasExpired = true;
-                        if (diffDays < minDays) {
-                            minDays = diffDays;
-                        }
+                        if (diffDays < minDays) minDays = diffDays;
                     }
                 });
 
@@ -663,18 +609,15 @@
                     `;
                 });
 
-                const badgeStyle = getTypeBadgeStyle(group.type);
-
                 card.innerHTML = `
                     <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-3.5 grid grid-cols-12 gap-2 items-center cursor-pointer hover:bg-slate-750 transition select-none">
                         <div class="col-span-8 space-y-1">
                             <div class="flex flex-wrap items-center gap-1.5">
-                                <span class="text-xs px-2.5 py-0.5 rounded-full border ${badgeStyle} font-semibold">${group.type}</span>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full border ${getTypeBadgeStyle(group.type)} font-semibold">${group.type}</span>
                                 <span class="text-xs text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${group.section}</span>
                             </div>
                             <h3 class="text-base font-bold text-white leading-snug">${group.name}</h3>
                         </div>
-                        
                         <div class="col-span-4 flex flex-col items-end justify-center text-right space-y-1">
                             <div class="flex items-center gap-1.5">
                                 <div class="text-left">
@@ -743,7 +686,7 @@
                         let yy = '20' + val.substring(0, 2), mm = val.substring(2, 4), dd = val.substring(4, 6);
                         if (dd === '00' || dd > '31') dd = '01';
                         expiry = `${yy}-${mm}-${dd}`;
-                    } else if (ai === '10') batch = val.split(' ')[0];
+                    } else if (ai === '10') batch = val.split(' ')[0].replace(/\|/g, '');
                 }
             }
 
@@ -761,124 +704,67 @@
                         }
                         i += 8;
                     } else if (raw.startsWith('10', i)) {
-                        i += 2; let sub = raw.substring(i), endIdx = raw.length;
-                        let sepIdx = sub.indexOf('|');
-                        if (sepIdx !== -1) endIdx = i + sepIdx;
-                        else {
-                            const nextAiMatch = sub.search(/(240|250|21|17\d{6})/);
-                            if (nextAiMatch !== -1 && nextAiMatch > 0) endIdx = i + nextAiMatch;
-                        }
-                        batch = raw.substring(i, endIdx).trim(); i = endIdx;
-                        if (raw[i] === '|') i++;
-                    } else if (raw.startsWith('240', i)) {
-                        i += 3; let sub = raw.substring(i);
-                        let sepIdx = sub.indexOf('|');
-                        if (sepIdx !== -1) i += sepIdx + 1;
-                        else break;
-                    } else i++;
+                        i += 2; let sub = raw.substring(i), endIdx = sub.indexOf('|');
+                        if (endIdx === -1) endIdx = sub.length;
+                        batch = sub.substring(0, endIdx).replace(/\|/g, '').trim();
+                        i += endIdx;
+                    } else { i++; }
                 }
             }
+
+            if (!code && clean.length >= 14 && /^\d+$/.test(clean.substring(0, 14))) {
+                code = clean.substring(0, 14);
+            }
+            if (!batch && clean.length > 14) {
+                let possibleBatch = clean.substring(14).split('|')[0].replace(/[^a-zA-Z0-9]/g, '');
+                if (possibleBatch.length > 2) batch = possibleBatch;
+            }
+
             return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
         }
 
-        function startModalScanner() {
-            const container = document.getElementById('modalReaderContainer');
-            container.classList.remove('hidden');
-            modalQrCode = new Html5Qrcode("modal-reader");
-            const config = { fps: 10, qrbox: { width: 220, height: 220 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
-            modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                const parsed = parseSmartQR(decodedText);
-                if (parsed.code) document.getElementById('itemCode').value = parsed.code;
-                if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
-                if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
-                playBeep(); stopModalScanner();
-            }, (error) => {}).catch(err => { alert("Error de cámara."); container.classList.add('hidden'); });
-        }
-
-        function stopModalScanner() {
-            if (modalQrCode && modalQrCode.isScanning) {
-                modalQrCode.stop().then(() => document.getElementById('modalReaderContainer').classList.add('hidden')).catch(() => document.getElementById('modalReaderContainer').classList.add('hidden'));
-            } else document.getElementById('modalReaderContainer').classList.add('hidden');
-        }
-
-        function openNewItemModal(prefillData = null) {
-            document.getElementById('modalTitle').innerText = "Nuevo Reactivo o Insumo";
-            document.getElementById('editKey').value = "";
-            document.getElementById('itemForm').reset();
-            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
-            stopModalScanner();
-            
-            if (prefillData) {
-                if (prefillData.code) document.getElementById('itemCode').value = prefillData.code;
-                if (prefillData.batch) document.getElementById('itemBatch').value = prefillData.batch;
-                if (prefillData.expiry) document.getElementById('itemExpiry').value = prefillData.expiry;
-                document.getElementById('itemName').focus();
-            } else {
-                document.getElementById('itemCode').value = 'LAB' + Math.floor(100000 + Math.random() * 900000);
-            }
-            document.getElementById('itemModal').classList.remove('hidden');
-            document.getElementById('itemModal').classList.add('flex');
-        }
-
-        function openEditItemModal(id) {
-            const item = inventoryMap[id];
-            if (!item) return;
-            stopModalScanner();
-            document.getElementById('modalTitle').innerText = "Editar Lote";
-            document.getElementById('editKey').value = id;
-            document.getElementById('itemCode').value = item.code;
-            document.getElementById('itemName').value = item.name;
-            document.getElementById('itemType').value = item.type || 'Reactivo';
-            document.getElementById('itemSection').value = item.section;
-            document.getElementById('itemStock').value = item.stock;
-            document.getElementById('itemBatch').value = item.batch;
-            document.getElementById('itemExpiry').value = item.expiry;
-            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
-            document.getElementById('itemModal').classList.remove('hidden');
-            document.getElementById('itemModal').classList.add('flex');
-        }
-
-        function closeNewItemModal() {
-            stopModalScanner();
-            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
-            document.getElementById('itemModal').classList.add('hidden');
-            document.getElementById('itemModal').classList.remove('flex');
-        }
-
-        function saveItem(event) {
-            event.preventDefault();
-            stopModalScanner();
-            const key = document.getElementById('editKey').value;
-            const newItem = {
-                code: document.getElementById('itemCode').value,
-                name: document.getElementById('itemName').value,
-                type: document.getElementById('itemType').value,
-                section: document.getElementById('itemSection').value,
-                stock: parseInt(document.getElementById('itemStock').value),
-                batch: document.getElementById('itemBatch').value,
-                expiry: document.getElementById('itemExpiry').value
-            };
-            if (dbRef) {
-                if (key === "") dbRef.push(newItem);
-                else dbRef.child(key).set(newItem);
-            }
-            closeNewItemModal();
-        }
-
-        function setScanMode(mode) {
-            scanMode = mode;
-            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
-            document.getElementById('modeBtnAdd').className = mode === 'add' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
-            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
-        }
-
+        // ESCÁNER EN VIVO OPTIMIZADO CON RESOLUCIÓN HD (1080p) PARA DATAMATRIX DENSOS
         function startScanner() {
             document.getElementById('scannerPlaceholder').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                processScannedCode(decodedText); playBeep();
-            }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
+            
+            const qrboxSize = window.innerWidth < 400 ? 250 : 280;
+            const config = { 
+                fps: 30, 
+                qrbox: { width: qrboxSize, height: qrboxSize },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.DATA_MATRIX, 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.EAN_13
+                ],
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                aspectRatio: 1.0
+            };
+
+            // Solicitamos resolución de alta definición para evitar que se empasten los puntos del DataMatrix
+            const constraints = {
+                facingMode: "environment",
+                width: { min: 1280, ideal: 1920, max: 2560 },
+                height: { min: 720, ideal: 1080, max: 1440 }
+            };
+
+            html5QrCode.start(
+                constraints, 
+                config, 
+                (decodedText) => {
+                    processScannedCode(decodedText); 
+                    playBeep();
+                }, 
+                (error) => {}
+            ).catch(err => { 
+                // Fallback automático si el teléfono no soporta alta resolución HD
+                html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                    processScannedCode(decodedText); 
+                    playBeep();
+                }, (error) => {});
+            });
+
             document.getElementById('startCameraBtn').classList.add('hidden');
             document.getElementById('stopCameraBtn').classList.remove('hidden');
         }
@@ -939,10 +825,7 @@
                 qtyContainer.classList.remove('hidden');
                 confirmBtn.classList.remove('hidden');
                 qtyLabel.innerText = `Cantidad a ${actionVerb}:`;
-                
-                confirmBtn.className = scanMode === 'add' 
-                    ? "flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5"
-                    : "flex-1 bg-rose-600 hover:bg-rose-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5";
+                confirmBtn.className = scanMode === 'add' ? "flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5" : "flex-1 bg-rose-600 hover:bg-rose-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5";
 
                 body.innerHTML = `
                     <div class="text-white font-bold text-sm mb-1">📦 ${item.name}</div>
