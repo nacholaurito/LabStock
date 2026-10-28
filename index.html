@@ -3,857 +3,1022 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LudovicApp Stock - Escáner DataMatrix Industrial</title>
-    <!-- Tailwind CSS CDN -->
+    <title>LudovicApp stock - Control de Insumos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ZXing Browser Library for DataMatrix and Barcode scanning -->
-    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-        .mono {
-            font-family: 'JetBrains Mono', monospace;
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        lab: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 900: '#14532d' }
+                    }
+                }
+            }
         }
-
-        /* Laser Scan Line Animation */
-        @keyframes scan-laser {
-            0% { top: 5%; opacity: 0.3; }
-            50% { top: 90%; opacity: 0.9; }
-            100% { top: 5%; opacity: 0.3; }
-        }
-
-        .laser-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0) 0%, rgba(239, 68, 68, 1) 50%, rgba(239, 68, 68, 0) 100%);
-            box-shadow: 0 0 12px #ef4444, 0 0 4px #ef4444;
-            animation: scan-laser 2.2s infinite ease-in-out;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #111827;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 9999px;
-        }
-    </style>
+    </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-4 py-3 shadow-md">
-        <div class="max-w-5xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-                    <i data-lucide="qr-code" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                        LudovicApp <span class="bg-indigo-500/20 text-indigo-400 text-xs px-2 py-0.5 rounded-full font-mono border border-indigo-500/30">STOCK v2.5</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">Escáner DataMatrix Industrial & Código de Barras</p>
-                </div>
+    <!-- HEADER / BARRA SUPERIOR -->
+    <header class="bg-slate-800/95 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 px-3.5 py-2.5 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3 min-w-0 flex-1 mr-2">
+            <!-- LOGO INTEGRADO COMO ÍCONO PROFESIONAL -->
+            <div class="bg-slate-900 border border-slate-700 p-1.5 rounded-xl shadow-md flex items-center justify-center shrink-0">
+                <img src="logo.webp" alt="Logo" class="w-7 h-7 md:w-8 md:h-8 object-contain">
             </div>
+            <div class="min-w-0 flex-1">
+                <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate leading-tight">LudovicApp stock</h1>
+                <p class="text-xs text-slate-400 truncate hidden sm:block">Control de Insumos de Laboratorio</p>
+            </div>
+        </div>
 
-            <!-- Header Quick Stats -->
-            <div class="hidden sm:flex items-center gap-4 text-xs font-mono">
-                <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
-                    <span class="text-slate-400">Total Escaneos: </span>
-                    <span id="stat-total" class="font-bold text-indigo-400">0</span>
-                </div>
-                <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
-                    <span class="text-slate-400">Estado Cám.: </span>
-                    <span id="stat-status" class="font-bold text-amber-400">Inactiva</span>
-                </div>
+        <nav class="hidden md:flex items-center space-x-1 bg-slate-900/60 p-1 rounded-xl border border-slate-700 shrink-0">
+            <button onclick="switchTab('inventory')" id="pc-btn-inventory" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-lab-400 bg-slate-800 shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-boxes-stacked"></i> Inventario
+            </button>
+            <button onclick="switchTab('scan')" id="pc-btn-scan" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-barcode"></i> Escáner
+            </button>
+            <button onclick="switchTab('labels')" id="pc-btn-labels" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-tags"></i> Etiquetas
+            </button>
+            <button onclick="switchTab('settings')" id="pc-btn-settings" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-gear"></i> Ajustes
+            </button>
+        </nav>
+
+        <div class="flex items-center space-x-2 shrink-0">
+            <div id="cloudStatus" class="flex items-center space-x-1.5 text-xs bg-slate-900/80 border border-slate-700/80 px-3 py-1 rounded-full text-slate-300">
+                <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span id="statusText">Conectando...</span>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 flex flex-col lg:grid lg:grid-cols-12 gap-5">
-        
-        <!-- Left Section: Camera Viewport & Controls (Lg 7 cols) -->
-        <section class="lg:col-span-7 flex flex-col gap-4">
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="max-w-7xl mx-auto p-3.5 md:p-6 space-y-4">
+
+        <!-- 1. PESTAÑA INVENTARIO -->
+        <section id="tab-inventory" class="tab-content space-y-3.5">
             
-            <!-- Video Viewport Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
-                
-                <!-- Viewport Header Info -->
-                <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-2">
-                        <span id="camera-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-                        <span id="camera-state-text" class="text-slate-300 font-medium">Cámara lista</span>
-                    </div>
-                    <div class="flex items-center gap-2 font-mono text-slate-400">
-                        <span id="camera-resolution">0x0</span>
-                    </div>
+            <!-- TARJETAS DE RESUMEN CLICKEABLES (KPIs FILTRADORES) -->
+            <div class="grid grid-cols-3 gap-2">
+                <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
+                    <h4 id="kpiTotal" class="text-lg font-extrabold text-white mt-0.5">0</h4>
                 </div>
-
-                <!-- Video Display Area -->
-                <div id="video-container" class="relative w-full aspect-[4/3] bg-black flex items-center justify-center overflow-hidden">
-                    
-                    <!-- Video Tag - Essential inline attributes for iOS/Android prevention of black screen -->
-                    <video id="video-element" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
-
-                    <!-- Initial Placeholder State -->
-                    <div id="video-placeholder" class="flex flex-col items-center justify-center p-6 text-center text-slate-500 gap-3">
-                        <div class="w-16 h-16 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
-                            <i data-lucide="camera-off" class="w-8 h-8"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium text-slate-300 text-sm">Cámara detenida o en espera</p>
-                            <p class="text-xs text-slate-500 mt-1 max-w-xs">Haz clic en "Iniciar Escáner" para activar la lectura en tiempo real de DataMatrix industrial.</p>
-                        </div>
-                    </div>
-
-                    <!-- Scanning Target Reticle & Laser Guide -->
-                    <div id="scanner-reticle" class="absolute inset-0 pointer-events-none hidden flex items-center justify-center">
-                        <div class="relative w-64 h-64 sm:w-72 sm:h-72 border-2 border-indigo-500/40 rounded-xl bg-indigo-500/5 backdrop-blur-[1px] shadow-[0_0_30px_rgba(99,102,241,0.15)] flex items-center justify-center">
-                            
-                            <!-- Laser line -->
-                            <div class="laser-line"></div>
-
-                            <!-- Target corners -->
-                            <div class="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-indigo-500 rounded-tl-lg"></div>
-                            <div class="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-indigo-500 rounded-tr-lg"></div>
-                            <div class="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-indigo-500 rounded-bl-lg"></div>
-                            <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-indigo-500 rounded-br-lg"></div>
-
-                            <!-- Center crosshair -->
-                            <div class="w-3 h-3 border border-indigo-400/50 rounded-full"></div>
-                        </div>
-
-                        <!-- Toast Feedback inside video -->
-                        <div id="scan-feedback-toast" class="absolute bottom-4 bg-emerald-500/90 text-white font-medium px-4 py-2 rounded-full text-xs shadow-lg backdrop-blur-md flex items-center gap-2 transition-all duration-300 opacity-0 transform translate-y-2">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i>
-                            <span id="scan-feedback-text">¡Código Detectado!</span>
-                        </div>
-                    </div>
+                <div onclick="setKpiFilter('expiring')" id="kpiCardExpiring" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-amber-500 transition">
+                    <p class="text-xs font-bold text-amber-400/90 uppercase tracking-wider">&lt; 30d Vto</p>
+                    <h4 id="kpiExpiring" class="text-lg font-extrabold text-amber-400 mt-0.5">0</h4>
                 </div>
-
-                <!-- Camera Controls Toolbar -->
-                <div class="p-3 sm:p-4 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
-                    
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button id="btn-toggle-camera" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95">
-                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
-                            <span>Iniciar Escáner</span>
-                        </button>
-
-                        <button id="btn-switch-camera" disabled class="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 px-3 py-2.5 rounded-xl font-medium text-sm border border-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95" title="Cambiar cámara">
-                            <i data-lucide="switch-camera" class="w-4 h-4"></i>
-                        </button>
-
-                        <button id="btn-toggle-torch" disabled class="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 px-3 py-2.5 rounded-xl font-medium text-sm border border-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95" title="Linterna/Flash">
-                            <i data-lucide="zap" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-
-                    <!-- Camera selector dropdown -->
-                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
-                        <select id="select-camera" class="w-full bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
-                            <option value="">Buscando cámaras...</option>
-                        </select>
-                    </div>
+                <div onclick="setKpiFilter('critical')" id="kpiCardCritical" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-2.5 text-center shadow-sm cursor-pointer hover:border-rose-500 transition">
+                    <p class="text-xs font-bold text-rose-400/90 uppercase tracking-wider">Crítico</p>
+                    <h4 id="kpiCritical" class="text-lg font-extrabold text-rose-400 mt-0.5">0</h4>
                 </div>
             </div>
 
-            <!-- Testing & Simulation Panel -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <i data-lucide="flask-conical" class="w-4 h-4 text-indigo-400"></i>
-                        Pruebas de Escaneo & Entrada Manual
-                    </h3>
-                    <span class="text-[10px] text-slate-500">Modo Diagnóstico</span>
+            <!-- BARRA DE BÚSQUEDA Y FILTROS -->
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm space-y-2.5">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Buscar reactivo, código o lote..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 h-10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-lab-500">
                 </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button id="btn-sim-datamatrix" class="bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-xs text-slate-200 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95">
-                        <i data-lucide="box" class="w-3.5 h-3.5 text-indigo-400"></i>
-                        Simular DataMatrix Industrial
-                    </button>
-                    <button id="btn-sim-barcode" class="bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-xs text-slate-200 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95">
-                        <i data-lucide="barcode" class="w-3.5 h-3.5 text-amber-400"></i>
-                        Simular Código EAN-13
-                    </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="typeFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                        <option value="">Todos los tipos</option>
+                        <option value="Reactivo">Reactivo</option>
+                        <option value="Calibrador">Calibrador</option>
+                        <option value="Control">Control</option>
+                        <option value="Consumible">Consumible</option>
+                    </select>
+                    <select id="sectionFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                        <option value="">Todas las secciones</option>
+                        <option value="Química">Química Clínica</option>
+                        <option value="Hematología">Hematología</option>
+                        <option value="Inmunología">Inmunología</option>
+                        <option value="Bacteriología">Bacteriología</option>
+                        <option value="Biología Molecular">Biología Molecular</option>
+                    </select>
                 </div>
+            </div>
 
-                <!-- Manual Code Input -->
-                <form id="form-manual" class="flex gap-2 pt-1">
-                    <input type="text" id="input-manual" placeholder="Ingrese o pegue código manualmente..." class="flex-1 bg-slate-950 border border-slate-700 text-slate-200 placeholder-slate-500 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none mono">
-                    <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-700 text-xs font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                        Añadir
-                    </button>
-                </form>
+            <!-- CONTENEDOR AGRUPADO EN COLUMNAS (ACORDEÓN) -->
+            <div id="inventoryGroupedContainer" class="space-y-2.5">
+            </div>
+
+            <div id="emptyInventory" class="hidden p-8 text-center text-slate-400">
+                <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-600"></i>
+                <p class="text-base font-medium">No se encontraron ítems con estos filtros</p>
             </div>
         </section>
 
-        <!-- Right Section: Inventory History & Details (Lg 5 cols) -->
-        <section class="lg:col-span-5 flex flex-col gap-4">
-            
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl flex-1 flex flex-col shadow-2xl overflow-hidden min-h-[420px]">
-                
-                <!-- History Header -->
-                <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 backdrop-blur-sm">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
-                        <h2 class="text-sm font-bold text-white">Historial de Stock</h2>
-                        <span id="badge-count" class="bg-slate-800 text-indigo-400 border border-slate-700 text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full">0</span>
-                    </div>
-
-                    <div class="flex items-center gap-1">
-                        <button id="btn-export" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-all" title="Exportar JSON">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                        </button>
-                        <button id="btn-clear-all" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all" title="Limpiar todo">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
+        <!-- 2. PESTAÑA ESCÁNER -->
+        <section id="tab-scan" class="tab-content hidden space-y-4">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 class="text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix / GS1
+                    </h2>
+                    <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1 w-full sm:w-auto justify-center">
+                        <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs">⚡ Descontar</button>
+                        <button onclick="setScanMode('add')" id="modeBtnAdd" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs">➕ Agregar</button>
+                        <button onclick="setScanMode('consult')" id="modeBtnConsult" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs">🔍 Consultar</button>
                     </div>
                 </div>
 
-                <!-- Last Scanned Highlight Banner -->
-                <div id="latest-scan-card" class="m-3 p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl hidden flex-col gap-1.5">
-                    <div class="flex items-center justify-between text-[10px] font-semibold tracking-wider text-indigo-300 uppercase">
-                        <span>Última Lectura Exitosa</span>
-                        <span id="latest-time" class="font-mono text-indigo-400">00:00:00</span>
-                    </div>
-                    <div id="latest-code" class="mono text-sm font-bold text-white break-all">---</div>
-                    <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-indigo-500/20">
-                        <span id="latest-format" class="bg-indigo-500/20 text-indigo-300 text-[10px] px-2 py-0.5 rounded font-mono">DataMatrix</span>
-                        <button id="btn-copy-latest" class="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-[11px]">
-                            <i data-lucide="copy" class="w-3 h-3"></i> Copiar
-                        </button>
+                <div class="relative bg-black rounded-lg overflow-hidden aspect-square max-w-xs mx-auto border border-slate-700 flex items-center justify-center">
+                    <div id="reader" class="w-full h-full"></div>
+                    <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-900">
+                        <i class="fa-solid fa-video-slash text-3xl mb-2"></i>
+                        <p class="text-xs">Cámara inactiva</p>
                     </div>
                 </div>
 
-                <!-- Scanned Items List Container -->
-                <div id="history-list" class="flex-1 p-3 overflow-y-auto flex flex-col gap-2 max-h-[480px]">
-                    <!-- Empty State -->
-                    <div id="history-empty" class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 gap-2">
-                        <i data-lucide="inbox" class="w-10 h-10 text-slate-700 stroke-[1.5]"></i>
-                        <p class="text-xs font-medium text-slate-400">Sin lecturas registradas</p>
-                        <p class="text-[11px] text-slate-600 max-w-[200px]">Los códigos DataMatrix o de barras escaneados aparecerán en este historial.</p>
+                <div class="flex gap-2">
+                    <button id="startCameraBtn" onclick="startScanner()" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
+                        <i class="fa-solid fa-camera"></i> Activar Cámara
+                    </button>
+                    <button id="stopCameraBtn" onclick="stopScanner()" class="hidden bg-rose-600 hover:bg-rose-700 text-white h-11 px-4 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
+                        <i class="fa-solid fa-stop"></i> Detener
+                    </button>
+                </div>
+
+                <div class="pt-3 border-t border-slate-700 space-y-1.5">
+                    <label class="block text-xs font-medium text-slate-400">Entrada manual / Pistola USB</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="manualScanInput" onkeypress="handleManualScanKey(event)" placeholder="Escribí código o lote..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <button onclick="processScannedCode(document.getElementById('manualScanInput').value); document.getElementById('manualScanInput').value='';" class="bg-slate-700 hover:bg-slate-600 text-white px-4 h-10 rounded-lg text-xs font-semibold shrink-0">Procesar</button>
                     </div>
                 </div>
 
+                <div id="scanResultCard" class="hidden p-3 bg-slate-900 rounded-lg border border-slate-700 space-y-1">
+                    <p class="text-xs text-slate-400">Último escaneo procesado:</p>
+                    <div id="scanResultContent" class="text-sm font-medium text-slate-200"></div>
+                </div>
             </div>
+        </section>
 
+        <!-- 3. PESTAÑA ETIQUETAS -->
+        <section id="tab-labels" class="tab-content hidden space-y-4">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-print text-lab-500"></i> Generador de Etiquetas
+                </h2>
+                <div class="space-y-1">
+                    <label class="block text-xs font-medium text-slate-400">Seleccionar Reactivo</label>
+                    <select id="labelItemSelect" onchange="generateBarcodePreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                    </select>
+                </div>
+                <div id="labelPreviewContainer" class="bg-white text-slate-900 p-4 rounded-lg flex flex-col items-center justify-center border border-slate-300 shadow-inner">
+                    <p class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">LABORATORIO CLÍNICO</p>
+                    <h3 id="lblItemName" class="text-base font-extrabold text-center">Nombre del Reactivo</h3>
+                    <p id="lblItemDetails" class="text-xs text-slate-600 mb-2">Lote: L-001 | Vto: 2027-12-31</p>
+                    <svg id="barcodeSvg" class="max-w-full h-14"></svg>
+                </div>
+                <button onclick="window.print()" class="w-full bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow">
+                    <i class="fa-solid fa-print"></i> Imprimir Etiqueta
+                </button>
+            </div>
+        </section>
+
+        <!-- 4. PESTAÑA AJUSTES -->
+        <section id="tab-settings" class="tab-content hidden space-y-4 max-w-xl mx-auto">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg space-y-3.5">
+                <h2 class="text-base font-bold flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-gear text-lab-500"></i> Catálogo Maestro de Nombres
+                </h2>
+                <p class="text-xs text-slate-400">Agregá los nombres oficiales para mantener la homogeneidad.</p>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="newCatalogName" placeholder="Ej: Architect rHTLV-I/II" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    <button onclick="addCatalogName()" class="bg-lab-600 hover:bg-lab-700 text-white px-4 h-10 rounded-lg text-xs font-semibold shadow flex items-center gap-1 shrink-0">
+                        <i class="fa-solid fa-plus"></i> Agregar
+                    </button>
+                </div>
+
+                <div class="border border-slate-700 rounded-lg overflow-hidden bg-slate-900 max-h-64 overflow-y-auto">
+                    <ul id="catalogList" class="divide-y divide-slate-800 text-sm">
+                    </ul>
+                </div>
+            </div>
         </section>
 
     </main>
 
-    <!-- Global Toast / Message Dialog -->
-    <div id="app-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-xl shadow-2xl z-50 flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none transform translate-y-4">
-        <i data-lucide="info" id="toast-icon" class="w-4 h-4 text-indigo-400"></i>
-        <span id="toast-msg">Notificación</span>
+    <!-- BOTÓN FLOTANTE NUEVO ÍTEM (MÓVIL) -->
+    <button onclick="openNewItemModal()" class="fixed bottom-16 right-4 z-40 md:hidden bg-lab-600 hover:bg-lab-700 active:scale-95 text-white w-13 h-13 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all border border-lab-400 p-3.5">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur-md border-t border-slate-700/80 px-2 py-1.5 flex justify-around items-center z-50 md:hidden shadow-2xl">
+        <button onclick="switchTab('inventory')" id="mob-btn-inventory" class="flex flex-col items-center text-lab-500 transition px-3 py-1">
+            <i class="fa-solid fa-boxes-stacked text-lg"></i>
+            <span class="text-xs font-medium mt-0.5">Inventario</span>
+        </button>
+        <button onclick="switchTab('scan')" id="mob-btn-scan" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition px-3 py-1">
+            <i class="fa-solid fa-barcode text-lg"></i>
+            <span class="text-xs font-medium mt-0.5">Escanear</span>
+        </button>
+        <button onclick="switchTab('labels')" id="mob-btn-labels" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition px-3 py-1">
+            <i class="fa-solid fa-tags text-lg"></i>
+            <span class="text-xs font-medium mt-0.5">Etiquetas</span>
+        </button>
+        <button onclick="switchTab('settings')" id="mob-btn-settings" class="flex flex-col items-center text-slate-400 hover:text-slate-200 transition px-3 py-1">
+            <i class="fa-solid fa-gear text-lg"></i>
+            <span class="text-xs font-medium mt-0.5">Ajustes</span>
+        </button>
+    </nav>
+
+    <!-- VENTANA MODAL: CONFIRMAR MOVIMIENTO DE STOCK -->
+    <div id="scanActionModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 id="scanModalTitle" class="text-base font-bold text-white">Confirmar Movimiento</h3>
+                <button onclick="closeScanActionModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div id="scanModalBody" class="space-y-1.5 text-xs text-slate-300 bg-slate-900 p-3 rounded-lg border border-slate-700">
+            </div>
+            <div id="qtyContainer" class="space-y-1">
+                <label id="qtyLabel" class="block text-xs font-medium text-slate-400">Cantidad a agregar</label>
+                <input type="number" id="scanModalQty" min="1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-11 text-lg font-bold text-center text-slate-100 focus:outline-none focus:border-lab-500">
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button type="button" onclick="closeScanActionModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white h-11 rounded-lg text-sm font-semibold">Cancelar</button>
+                <button type="button" onclick="executeScanAction()" id="scanModalConfirmBtn" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-check"></i> OK - Confirmar
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Application Script -->
+    <!-- MODAL NUEVO / EDITAR ÍTEM -->
+    <div id="itemModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 max-w-md w-full shadow-2xl space-y-3.5 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h3 id="modalTitle" class="text-base font-bold text-white">Nuevo Reactivo o Insumo</h3>
+                <button onclick="closeNewItemModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="itemForm" onsubmit="saveItem(event)" class="space-y-3">
+                <input type="hidden" id="editKey" value="">
+                
+                <div class="space-y-1">
+                    <label class="block text-xs font-medium text-slate-400">Código / GTIN</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="itemCode" required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <button type="button" onclick="startModalScanner()" class="bg-lab-600 hover:bg-lab-700 text-white px-3.5 h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow shrink-0">
+                            <i class="fa-solid fa-camera"></i> Escanear
+                        </button>
+                    </div>
+                    <div id="modalReaderContainer" class="hidden aspect-square max-w-xs mx-auto bg-black rounded-lg overflow-hidden mt-2 relative border border-slate-700">
+                        <div id="modal-reader" class="w-full h-full"></div>
+                        <button type="button" onclick="stopModalScanner()" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-semibold shadow z-10">Cerrar</button>
+                    </div>
+                </div>
+
+                <div class="relative space-y-1" id="nameComboboxContainer">
+                    <label class="block text-xs font-medium text-slate-400">Nombre del Reactivo</label>
+                    <div class="relative">
+                        <input type="text" id="itemName" required autocomplete="off" oninput="handleNameSearchInput(event)" onfocus="handleNameSearchInput(event)" placeholder="Escribí para buscar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                        <i class="fa-solid fa-chevron-down absolute right-3.5 top-3.5 text-xs text-slate-500 pointer-events-none"></i>
+                    </div>
+
+                    <div id="nameSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-400">Tipo</label>
+                        <select id="itemType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                            <option value="Reactivo">Reactivo</option>
+                            <option value="Calibrador">Calibrador</option>
+                            <option value="Control">Control</option>
+                            <option value="Consumible">Consumible</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-400">Sección</label>
+                        <select id="itemSection" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
+                            <option value="Química">Química Clínica</option>
+                            <option value="Hematología">Hematología</option>
+                            <option value="Inmunología">Inmunología</option>
+                            <option value="Bacteriología">Bacteriología</option>
+                            <option value="Biología Molecular">Biología Molecular</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-400">N° de Lote</label>
+                        <input type="text" id="itemBatch" required placeholder="L-9082" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-400">Cantidad / Stock</label>
+                        <input type="number" id="itemStock" min="0" required value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-medium text-slate-400">Vencimiento</label>
+                    <input type="date" id="itemExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-100 focus:outline-none focus:border-lab-500">
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeNewItemModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white h-11 rounded-lg text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold shadow">Guardar en la Nube</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL -->
     <script>
-        /**
-         * LudovicApp Stock - DataMatrix & Barcode Live Scanner Controller
-         * Handles camera lifecycle safely to prevent black screen / frozen state.
-         */
-        class LudovicStockScanner {
-            constructor() {
-                // Core state variables
-                this.codeReader = null;
-                this.isScanning = false;
-                this.selectedDeviceId = null;
-                this.availableDevices = [];
-                this.torchEnabled = false;
-                this.scannedHistory = [];
-                this.lastScannedCode = null;
-                this.lastScanTimestamp = 0;
-                this.scanThrottleMs = 1200; // Minimum time between duplicate scans
-                this.audioCtx = null;
+        let inventoryMap = {}; 
+        let inventoryArray = []; 
+        let catalogMap = {};
+        let catalogArray = [];
+        let openAccordions = {};
+        let activeKpiFilter = 'all';
 
-                // DOM Elements Cache
-                this.videoEl = document.getElementById('video-element');
-                this.videoPlaceholder = document.getElementById('video-placeholder');
-                this.reticle = document.getElementById('scanner-reticle');
-                this.btnToggle = document.getElementById('btn-toggle-camera');
-                this.btnSwitch = document.getElementById('btn-switch-camera');
-                this.btnTorch = document.getElementById('btn-toggle-torch');
-                this.selectCamera = document.getElementById('select-camera');
-                this.cameraIndicator = document.getElementById('camera-indicator');
-                this.cameraStateText = document.getElementById('camera-state-text');
-                this.cameraResolution = document.getElementById('camera-resolution');
-                this.historyList = document.getElementById('history-list');
-                this.historyEmpty = document.getElementById('history-empty');
-                this.badgeCount = document.getElementById('badge-count');
-                this.statTotal = document.getElementById('stat-total');
-                this.statStatus = document.getElementById('stat-status');
-                
-                // Latest scan UI
-                this.latestCard = document.getElementById('latest-scan-card');
-                this.latestCode = document.getElementById('latest-code');
-                this.latestTime = document.getElementById('latest-time');
-                this.latestFormat = document.getElementById('latest-format');
-                this.btnCopyLatest = document.getElementById('btn-copy-latest');
+        let html5QrCode = null;
+        let modalQrCode = null;
+        let scanMode = 'deduct';
+        let dbRef = null;
+        let catalogRef = null;
+        
+        let activeScanItem = null;
+        let activeScanParsed = null;
 
-                this.init();
-            }
+        const firebaseConfig = {
+            databaseURL: "https://labstock-80756-default-rtdb.firebaseio.com",
+            apiKey: "AIzaSyAtziFbdgkGJOpqL1Aq2JdCR0XZuxXZ1Sg",
+            projectId: "labstock-80756"
+        };
 
-            init() {
-                // Initialize ZXing Browser Multi Format Reader
-                const hints = new Map();
-                // Enable DataMatrix, QR Code, EAN13, Code128
-                const possibleFormats = [
-                    ZXing.BarcodeFormat.DATA_MATRIX,
-                    ZXing.BarcodeFormat.EAN_13,
-                    ZXing.BarcodeFormat.CODE_128,
-                    ZXing.BarcodeFormat.QR_CODE
-                ];
-                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, possibleFormats);
-                hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        initFirebase(firebaseConfig);
 
-                this.codeReader = new ZXing.BrowserMultiFormatReader(hints);
-
-                // Initialize Audio Context for Beep feedback on interaction
-                window.addEventListener('click', () => this.initAudio(), { once: true });
-                window.addEventListener('touchstart', () => this.initAudio(), { once: true });
-
-                // Event Listeners setup
-                this.btnToggle.addEventListener('click', () => this.toggleScanner());
-                this.btnSwitch.addEventListener('click', () => this.switchCamera());
-                this.btnTorch.addEventListener('click', () => this.toggleTorch());
-                this.selectCamera.addEventListener('change', (e) => this.onCameraSelectChanged(e));
-
-                // Simulation & Manual forms
-                document.getElementById('btn-sim-datamatrix').addEventListener('click', () => this.simulateScan('DATAMATRIX_IND_901284', 'DATA_MATRIX'));
-                document.getElementById('btn-sim-barcode').addEventListener('click', () => this.simulateScan('7791234567890', 'EAN_13'));
-                document.getElementById('form-manual').addEventListener('submit', (e) => this.handleManualSubmit(e));
-                
-                // Export and Clear History
-                document.getElementById('btn-export').addEventListener('click', () => this.exportHistory());
-                document.getElementById('btn-clear-all').addEventListener('click', () => this.clearHistory());
-                this.btnCopyLatest.addEventListener('click', () => this.copyToClipboard(this.latestCode.innerText));
-
-                // Page visibility handler (CRITICAL to prevent black screen/camera lock on tab switch)
-                document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
-
-                // Enumerate available camera devices
-                this.listVideoInputDevices();
-
-                // Initialize Lucide icons
-                lucide.createIcons();
-            }
-
-            initAudio() {
-                if (!this.audioCtx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        this.audioCtx = new AudioContext();
-                    }
+        function initFirebase(config) {
+            try {
+                if (firebase.apps.length === 0) {
+                    firebase.initializeApp(config);
                 }
-            }
+                dbRef = firebase.database().ref('reactivos');
+                catalogRef = firebase.database().ref('catalogo_nombres');
+                updateCloudStatus('connecting', 'Sincronizando...');
 
-            // Synthetic Beep Sound Feedback
-            playBeepSound() {
-                try {
-                    if (!this.audioCtx) this.initAudio();
-                    if (this.audioCtx) {
-                        if (this.audioCtx.state === 'suspended') {
-                            this.audioCtx.resume();
-                        }
-                        const osc = this.audioCtx.createOscillator();
-                        const gain = this.audioCtx.createGain();
-
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(1800, this.audioCtx.currentTime); // Industrial beep pitch
-                        gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + 0.12);
-
-                        osc.connect(gain);
-                        gain.connect(this.audioCtx.destination);
-
-                        osc.start();
-                        osc.stop(this.audioCtx.currentTime + 0.12);
-                    }
-                } catch (e) {
-                    console.warn("Audio feedback error:", e);
-                }
-            }
-
-            // List available camera devices safely
-            async listVideoInputDevices() {
-                try {
-                    this.availableDevices = await this.codeReader.listVideoInputDevices();
-                    this.selectCamera.innerHTML = '';
-
-                    if (this.availableDevices.length === 0) {
-                        this.selectCamera.innerHTML = '<option value="">No se encontraron cámaras</option>';
-                        return;
-                    }
-
-                    // Prefer back/environment camera for industrial scanning
-                    let selectedDevice = this.availableDevices.find(device => 
-                        /back|rear|trasera|environment|principal/i.test(device.label)
-                    );
-
-                    if (!selectedDevice) {
-                        selectedDevice = this.availableDevices[this.availableDevices.length - 1]; // Default to last camera
-                    }
-
-                    this.selectedDeviceId = selectedDevice ? selectedDevice.deviceId : this.availableDevices[0].deviceId;
-
-                    this.availableDevices.forEach((device, index) => {
-                        const option = document.createElement('option');
-                        option.value = device.deviceId;
-                        option.text = device.label || `Cámara ${index + 1}`;
-                        if (device.deviceId === this.selectedDeviceId) {
-                            option.selected = true;
-                        }
-                        this.selectCamera.appendChild(option);
-                    });
-
-                    this.btnSwitch.disabled = this.availableDevices.length <= 1;
-
-                } catch (err) {
-                    console.error("Error al enumerar dispositivos de video:", err);
-                    this.showToast("Error al obtener lista de cámaras", "error");
-                }
-            }
-
-            // Toggle Start / Stop Scanner
-            async toggleScanner() {
-                if (this.isScanning) {
-                    await this.stopScanner();
-                } else {
-                    await this.startScanner();
-                }
-            }
-
-            // Main Scanner Start Logic - Ensures clean stream initialization
-            async startScanner() {
-                try {
-                    this.updateCameraUIState('starting');
-
-                    // 1. Release previous tracks or instances first to prevent hardware locks
-                    await this.releaseCurrentStream();
-
-                    // 2. Set strict inline video properties for iOS/Android
-                    this.videoEl.muted = true;
-                    this.videoEl.setAttribute('playsinline', 'true');
-                    this.videoEl.setAttribute('autoplay', 'true');
-
-                    // 3. Start decoding continuously from video device
-                    const deviceId = this.selectedDeviceId || undefined;
-
-                    await this.codeReader.decodeFromVideoDevice(
-                        deviceId, 
-                        this.videoEl, 
-                        (result, err) => {
-                            if (result) {
-                                this.handleCodeDetected(result);
-                            }
-                            if (err && !(err instanceof ZXing.NotFoundException)) {
-                                console.warn("Error continuo de escaneo:", err);
-                            }
-                        }
-                    );
-
-                    this.isScanning = true;
-                    this.updateCameraUIState('active');
-                    this.checkTorchAvailability();
-
-                } catch (err) {
-                    console.error("Fallo crítico al iniciar cámara:", err);
-                    await this.stopScanner();
-                    this.showToast("Error de acceso a la cámara. Verifique permisos.", "error");
-                    this.updateCameraUIState('error');
-                }
-            }
-
-            // Stop scanner cleanly releasing hardware
-            async stopScanner() {
-                this.isScanning = false;
-                
-                try {
-                    if (this.codeReader) {
-                        this.codeReader.reset();
-                    }
-                } catch (e) {
-                    console.warn("Error al reiniciar codeReader:", e);
-                }
-
-                await this.releaseCurrentStream();
-                this.updateCameraUIState('stopped');
-            }
-
-            // Explicitly stop media tracks to clear black screen or frozen preview state
-            async releaseCurrentStream() {
-                if (this.videoEl && this.videoEl.srcObject) {
-                    const stream = this.videoEl.srcObject;
-                    if (stream.getTracks) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-                    this.videoEl.srcObject = null;
-                }
-            }
-
-            // Check if device supports torch/flash
-            async checkTorchAvailability() {
-                try {
-                    if (this.videoEl.srcObject) {
-                        const track = this.videoEl.srcObject.getVideoTracks()[0];
-                        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-                        
-                        if (capabilities.torch) {
-                            this.btnTorch.disabled = false;
-                        } else {
-                            this.btnTorch.disabled = true;
-                        }
-                    }
-                } catch (e) {
-                    this.btnTorch.disabled = true;
-                }
-            }
-
-            // Toggle Flash/Torch on mobile devices
-            async toggleTorch() {
-                try {
-                    if (!this.videoEl.srcObject) return;
-                    const track = this.videoEl.srcObject.getVideoTracks()[0];
-                    this.torchEnabled = !this.torchEnabled;
-
-                    await track.applyConstraints({
-                        advanced: [{ torch: this.torchEnabled }]
-                    });
-
-                    this.btnTorch.classList.toggle('bg-amber-500', this.torchEnabled);
-                    this.btnTorch.classList.toggle('text-slate-950', this.torchEnabled);
-                    this.showToast(this.torchEnabled ? "Linterna Activada" : "Linterna Apagada");
-                } catch (err) {
-                    console.warn("No se pudo controlar la linterna:", err);
-                    this.showToast("Linterna no disponible en esta cámara", "warning");
-                }
-            }
-
-            // Switch between cameras
-            async switchCamera() {
-                if (this.availableDevices.length <= 1) return;
-                
-                const currentIndex = this.availableDevices.findIndex(d => d.deviceId === this.selectedDeviceId);
-                const nextIndex = (currentIndex + 1) % this.availableDevices.length;
-                this.selectedDeviceId = this.availableDevices[nextIndex].deviceId;
-                this.selectCamera.value = this.selectedDeviceId;
-
-                if (this.isScanning) {
-                    await this.startScanner();
-                }
-            }
-
-            onCameraSelectChanged(e) {
-                this.selectedDeviceId = e.target.value;
-                if (this.isScanning) {
-                    this.startScanner();
-                }
-            }
-
-            // Handle scan detection with throttling
-            handleCodeDetected(result) {
-                const now = Date.now();
-                const codeText = result.getText();
-                const format = result.getBarcodeFormat() ? this.formatEnumToString(result.getBarcodeFormat()) : 'DataMatrix';
-
-                // Prevent duplicate fast scanning of the same item
-                if (codeText === this.lastScannedCode && (now - this.lastScanTimestamp) < this.scanThrottleMs) {
-                    return;
-                }
-
-                this.lastScannedCode = codeText;
-                this.lastScanTimestamp = now;
-
-                // Play sound & visual feedback
-                this.playBeepSound();
-                this.triggerScanFeedbackToast(codeText);
-
-                // Add to inventory store
-                this.addScanRecord(codeText, format);
-            }
-
-            // Handle tab visibility change
-            async handleVisibilityChange() {
-                if (document.hidden) {
-                    if (this.isScanning) {
-                        console.log("Pestaña oculta: Pausando escáner para evitar congelamiento de cámara.");
-                        await this.stopScanner();
-                        this.wasScanningBeforeHide = true;
-                    }
-                } else {
-                    if (this.wasScanningBeforeHide) {
-                        console.log("Pestaña activa: Reiniciando cámara limpiamente.");
-                        this.wasScanningBeforeHide = false;
-                        setTimeout(() => this.startScanner(), 300);
-                    }
-                }
-            }
-
-            // Add record to UI and state
-            addScanRecord(code, format = 'DataMatrix') {
-                const record = {
-                    id: Date.now(),
-                    code: code,
-                    format: format,
-                    timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                    date: new Date().toLocaleDateString('es-AR')
-                };
-
-                this.scannedHistory.unshift(record);
-                this.updateHistoryUI(record);
-            }
-
-            // Update history and stats UI
-            updateHistoryUI(latestRecord = null) {
-                // Update stats
-                this.badgeCount.innerText = this.scannedHistory.length;
-                this.statTotal.innerText = this.scannedHistory.length;
-
-                if (this.scannedHistory.length === 0) {
-                    this.historyEmpty.classList.remove('hidden');
-                    this.latestCard.classList.add('hidden');
-                    this.historyList.innerHTML = '';
-                    this.historyList.appendChild(this.historyEmpty);
-                    return;
-                }
-
-                this.historyEmpty.classList.add('hidden');
-
-                // Update Latest Scan Banner
-                if (latestRecord) {
-                    this.latestCard.classList.remove('hidden');
-                    this.latestCard.classList.add('flex');
-                    this.latestCode.innerText = latestRecord.code;
-                    this.latestTime.innerText = latestRecord.timestamp;
-                    this.latestFormat.innerText = latestRecord.format;
-                }
-
-                // Render list
-                this.historyList.innerHTML = '';
-                this.scannedHistory.forEach(item => {
-                    const el = document.createElement('div');
-                    el.className = 'bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-slate-700 transition-all';
-                    
-                    const isDataMatrix = item.format.includes('DATA_MATRIX') || item.format.includes('DataMatrix');
-                    const iconType = isDataMatrix ? 'box' : 'barcode';
-                    const badgeColor = isDataMatrix ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-
-                    el.innerHTML = `
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 flex-shrink-0">
-                                <i data-lucide="${iconType}" class="w-4 h-4"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <div class="mono text-xs font-semibold text-slate-100 truncate">${this.escapeHtml(item.code)}</div>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] ${badgeColor} border px-1.5 py-0.2 rounded font-mono">${item.format}</span>
-                                    <span class="text-[10px] text-slate-500 font-mono">${item.timestamp}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <button onclick="app.copyToClipboard('${this.escapeHtml(item.code)}')" class="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg transition-all" title="Copiar">
-                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="app.deleteRecord(${item.id})" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg transition-all" title="Eliminar">
-                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
-                    `;
-                    this.historyList.appendChild(el);
+                dbRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    inventoryMap = data || {};
+                    inventoryArray = Object.keys(inventoryMap).map(key => ({
+                        id: key,
+                        type: inventoryMap[key].type || 'Reactivo',
+                        ...inventoryMap[key]
+                    }));
+                    updateCloudStatus('online', 'En vivo');
+                    filterInventory();
+                }, (error) => {
+                    updateCloudStatus('error', 'Error');
                 });
 
-                lucide.createIcons();
-            }
+                catalogRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    catalogMap = data || {};
+                    catalogArray = Object.keys(catalogMap).map(key => ({
+                        id: key,
+                        name: catalogMap[key].name
+                    }));
+                    updateCatalogUI();
+                });
 
-            deleteRecord(id) {
-                this.scannedHistory = this.scannedHistory.filter(item => item.id !== id);
-                this.updateHistoryUI(this.scannedHistory[0] || null);
-                this.showToast("Registro eliminado");
-            }
-
-            clearHistory() {
-                if (this.scannedHistory.length === 0) return;
-                this.scannedHistory = [];
-                this.updateHistoryUI();
-                this.showToast("Historial vaciado");
-            }
-
-            // Simulate Scan
-            simulateScan(code, format) {
-                this.playBeepSound();
-                this.addScanRecord(code, format);
-                this.triggerScanFeedbackToast(code);
-                this.showToast(`Simulación: ${format} registrado`);
-            }
-
-            handleManualSubmit(e) {
-                e.preventDefault();
-                const input = document.getElementById('input-manual');
-                const val = input.value.trim();
-                if (val) {
-                    this.addScanRecord(val, 'MANUAL_ENTRY');
-                    this.playBeepSound();
-                    input.value = '';
-                    this.showToast("Código ingresado manualmente");
-                }
-            }
-
-            // Camera UI state updater
-            updateCameraUIState(state) {
-                switch(state) {
-                    case 'active':
-                        this.videoEl.classList.remove('hidden');
-                        this.videoPlaceholder.classList.add('hidden');
-                        this.reticle.classList.remove('hidden');
-                        this.reticle.classList.add('flex');
-                        
-                        this.btnToggle.innerHTML = `<i data-lucide="square" class="w-4 h-4 fill-current"></i><span>Detener Escáner</span>`;
-                        this.btnToggle.className = 'flex-1 sm:flex-initial bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 active:scale-95';
-                        
-                        this.cameraIndicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
-                        this.cameraStateText.innerText = 'Transmisión En Vivo (DataMatrix)';
-                        this.cameraStateText.className = 'text-emerald-400 font-medium';
-                        this.statStatus.innerText = 'Escaneando';
-                        this.statStatus.className = 'font-bold text-emerald-400';
-
-                        setTimeout(() => {
-                            if (this.videoEl.videoWidth) {
-                                this.cameraResolution.innerText = `${this.videoEl.videoWidth}x${this.videoEl.videoHeight}`;
-                            }
-                        }, 500);
-                        break;
-
-                    case 'starting':
-                        this.cameraStateText.innerText = 'Iniciando cámara...';
-                        this.cameraIndicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping';
-                        break;
-
-                    case 'stopped':
-                    case 'error':
-                    default:
-                        this.videoEl.classList.add('hidden');
-                        this.videoPlaceholder.classList.remove('hidden');
-                        this.reticle.classList.add('hidden');
-                        this.reticle.classList.remove('flex');
-                        
-                        this.btnToggle.innerHTML = `<i data-lucide="play" class="w-4 h-4 fill-current"></i><span>Iniciar Escáner</span>`;
-                        this.btnToggle.className = 'flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95';
-                        
-                        this.cameraIndicator.className = 'w-2.5 h-2.5 rounded-full bg-slate-600';
-                        this.cameraStateText.innerText = state === 'error' ? 'Error de Cámara' : 'Cámara Detenida';
-                        this.cameraStateText.className = state === 'error' ? 'text-rose-400 font-medium' : 'text-slate-400';
-                        this.statStatus.innerText = 'Inactiva';
-                        this.statStatus.className = 'font-bold text-amber-400';
-                        this.cameraResolution.innerText = '0x0';
-                        this.btnTorch.disabled = true;
-                        break;
-                }
-                lucide.createIcons();
-            }
-
-            triggerScanFeedbackToast(code) {
-                const toast = document.getElementById('scan-feedback-toast');
-                const text = document.getElementById('scan-feedback-text');
-                text.innerText = `Detectado: ${code.substring(0, 18)}${code.length > 18 ? '...' : ''}`;
-                
-                toast.classList.remove('opacity-0', 'translate-y-2');
-                toast.classList.add('opacity-100', 'translate-y-0');
-
-                setTimeout(() => {
-                    toast.classList.remove('opacity-100', 'translate-y-0');
-                    toast.classList.add('opacity-0', 'translate-y-2');
-                }, 1800);
-            }
-
-            showToast(msg, type = 'info') {
-                const toast = document.getElementById('app-toast');
-                const msgEl = document.getElementById('toast-msg');
-                msgEl.innerText = msg;
-
-                toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-                toast.classList.add('opacity-100', 'translate-y-0');
-
-                setTimeout(() => {
-                    toast.classList.remove('opacity-100', 'translate-y-0');
-                    toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-                }, 2500);
-            }
-
-            copyToClipboard(text) {
-                if (!text) return;
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
-                    this.showToast('Copiado al portapapeles');
-                } catch (err) {
-                    this.showToast('No se pudo copiar');
-                }
-                document.body.removeChild(textarea);
-            }
-
-            exportHistory() {
-                if (this.scannedHistory.length === 0) {
-                    this.showToast("No hay datos para exportar", "warning");
-                    return;
-                }
-
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.scannedHistory, null, 2));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `ludovic_stock_${new Date().toISOString().slice(0,10)}.json`);
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
-                this.showToast("Historial exportado en JSON");
-            }
-
-            formatEnumToString(formatEnum) {
-                switch(formatEnum) {
-                    case ZXing.BarcodeFormat.DATA_MATRIX: return 'DataMatrix';
-                    case ZXing.BarcodeFormat.EAN_13: return 'EAN-13';
-                    case ZXing.BarcodeFormat.CODE_128: return 'Code128';
-                    case ZXing.BarcodeFormat.QR_CODE: return 'QR Code';
-                    default: return 'Barcode';
-                }
-            }
-
-            escapeHtml(str) {
-                return String(str)
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
+            } catch (e) {
+                updateCloudStatus('error', 'Error');
             }
         }
 
-        // Initialize application on page load
-        let app = null;
-        window.addEventListener('DOMContentLoaded', () => {
-            app = new LudovicStockScanner();
-        });
+        function updateCloudStatus(status, text) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            statusText.innerText = text;
+            if (status === 'online') {
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-lab-500 animate-pulse";
+            } else if (status === 'connecting') {
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+            } else {
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+            }
+        }
+
+        function setKpiFilter(filterType) {
+            activeKpiFilter = activeKpiFilter === filterType ? 'all' : filterType;
+            
+            document.getElementById('kpiCardAll').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'all' ? 'border-lab-500 ring-1 ring-lab-500' : 'border-slate-700/70 hover:border-lab-500'}`;
+            document.getElementById('kpiCardExpiring').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'expiring' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700/70 hover:border-amber-500'}`;
+            document.getElementById('kpiCardCritical').className = `bg-slate-800/90 rounded-xl p-2.5 text-center shadow-sm cursor-pointer transition border-2 ${activeKpiFilter === 'critical' ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700/70 hover:border-rose-500'}`;
+
+            filterInventory();
+        }
+
+        function updateKPIs(data) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            let expiringCount = 0;
+            let criticalCount = 0;
+
+            data.forEach(item => {
+                if (item.stock <= 3) criticalCount++;
+                if (item.expiry) {
+                    const expDate = new Date(item.expiry + 'T00:00:00');
+                    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                    if (diffDays <= 30) expiringCount++;
+                }
+            });
+
+            document.getElementById('kpiTotal').innerText = data.length;
+            document.getElementById('kpiExpiring').innerText = expiringCount;
+            document.getElementById('kpiCritical').innerText = criticalCount;
+        }
+
+        function handleNameSearchInput(event) {
+            const input = document.getElementById('itemName');
+            const dropdown = document.getElementById('nameSuggestionsDropdown');
+            const query = input.value.trim().toLowerCase();
+
+            if (query.length < 1) {
+                dropdown.classList.add('hidden');
+                dropdown.innerHTML = '';
+                return;
+            }
+
+            let allNames = catalogArray.map(c => c.name);
+            inventoryArray.forEach(i => {
+                if (i.name && !allNames.includes(i.name)) allNames.push(i.name);
+            });
+
+            if (allNames.length === 0) {
+                allNames = ["Architect rHTLV-I/II", "Virclia Parvovirus IgM Monotest", "Optilite IgG Kit", "Glucosa GOD-PAP", "Colesterol Total"];
+            }
+
+            const matches = allNames.filter(n => n.toLowerCase().includes(query));
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400">Usar: <b class="text-white">"${input.value}"</b></div>`;
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            dropdown.innerHTML = '';
+            matches.forEach(name => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-lab-400 cursor-pointer font-medium transition flex items-center justify-between";
+                const regEx = new RegExp(`(${query})`, 'gi');
+                const highlighted = name.replace(regEx, `<span class="text-lab-400 font-bold">$1</span>`);
+                itemDiv.innerHTML = `<span>${highlighted}</span>`;
+                itemDiv.onclick = () => selectNameFromDropdown(name);
+                dropdown.appendChild(itemDiv);
+            });
+
+            dropdown.classList.remove('hidden');
+        }
+
+        function selectNameFromDropdown(name) {
+            document.getElementById('itemName').value = name;
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
+        }
+
+        function closeNameDropdownOutside(event) {
+            const container = document.getElementById('nameComboboxContainer');
+            if (container && !container.contains(event.target)) {
+                const dropdown = document.getElementById('nameSuggestionsDropdown');
+                if (dropdown) dropdown.classList.add('hidden');
+            }
+        }
+
+        function addCatalogName() {
+            const input = document.getElementById('newCatalogName');
+            const name = input.value.trim();
+            if (!name) return;
+            const exists = catalogArray.some(item => item.name.toLowerCase() === name.toLowerCase());
+            if (exists) { alert('Ya existe.'); return; }
+            if (catalogRef) { catalogRef.push({ name: name }); input.value = ''; }
+        }
+
+        function deleteCatalogName(id) {
+            if (confirm('¿Eliminar nombre?')) {
+                if (catalogRef) catalogRef.child(id).remove();
+            }
+        }
+
+        function updateCatalogUI() {
+            const listContainer = document.getElementById('catalogList');
+            if (listContainer) {
+                listContainer.innerHTML = '';
+                if (catalogArray.length === 0) {
+                    listContainer.innerHTML = `<li class="p-3 text-center text-slate-500 text-xs">Sin nombres guardados.</li>`;
+                    return;
+                }
+                catalogArray.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex justify-between items-center p-2.5 hover:bg-slate-800 transition";
+                    li.innerHTML = `
+                        <span class="text-slate-200 font-medium">${item.name}</span>
+                        <button onclick="deleteCatalogName('${item.id}')" class="text-rose-400 hover:text-rose-300 p-1"><i class="fa-solid fa-trash"></i></button>
+                    `;
+                    listContainer.appendChild(li);
+                });
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            ['inventory', 'scan', 'labels', 'settings'].forEach(id => {
+                const pcBtn = document.getElementById(`pc-btn-${id}`);
+                const mobBtn = document.getElementById(`mob-btn-${id}`);
+                if (pcBtn) pcBtn.className = (id === tabId) ? "px-3 py-1.5 rounded-lg text-sm font-semibold text-lab-400 bg-slate-800 shadow transition flex items-center gap-1.5" : "px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+                if (mobBtn) mobBtn.className = (id === tabId) ? "flex flex-col items-center text-lab-500 transition px-3 py-1" : "flex flex-col items-center text-slate-400 hover:text-slate-200 transition px-3 py-1";
+            });
+
+            if (tabId === 'labels') populateLabelSelect();
+            if (tabId !== 'scan' && html5QrCode && html5QrCode.isScanning) stopScanner();
+        }
+
+        function getTypeBadgeStyle(type) {
+            switch(type) {
+                case 'Calibrador':
+                    return 'bg-sky-950 text-sky-400 border-sky-800/80';
+                case 'Control':
+                    return 'bg-purple-950 text-purple-400 border-purple-800/80';
+                case 'Consumible':
+                    return 'bg-amber-950 text-amber-400 border-amber-800/80';
+                case 'Reactivo':
+                default:
+                    return 'bg-emerald-950 text-emerald-400 border-emerald-800/80';
+            }
+        }
+
+        function renderInventory(dataToRender = inventoryArray) {
+            const container = document.getElementById('inventoryGroupedContainer');
+            const emptyState = document.getElementById('emptyInventory');
+            container.innerHTML = '';
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            const kpiFiltered = dataToRender.filter(item => {
+                if (activeKpiFilter === 'expiring') {
+                    if (!item.expiry) return false;
+                    const expDate = new Date(item.expiry + 'T00:00:00');
+                    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                    return diffDays <= 30;
+                } else if (activeKpiFilter === 'critical') {
+                    return item.stock <= 3;
+                }
+                return true;
+            });
+
+            if (kpiFiltered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            const grouped = {};
+            kpiFiltered.forEach(item => {
+                const name = item.name || 'Sin Nombre';
+                if (!grouped[name]) {
+                    grouped[name] = {
+                        name: name,
+                        type: item.type || 'Reactivo',
+                        section: item.section || 'Química',
+                        totalStock: 0,
+                        lots: []
+                    };
+                }
+                grouped[name].totalStock += (parseInt(item.stock) || 0);
+                grouped[name].lots.push(item);
+            });
+
+            Object.keys(grouped).forEach(name => {
+                const group = grouped[name];
+                
+                let minDays = 999999;
+                let hasExpired = false;
+
+                group.lots.forEach(lot => {
+                    if (lot.expiry) {
+                        const expDate = new Date(lot.expiry + 'T00:00:00');
+                        const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                        if (diffDays < 0) hasExpired = true;
+                        if (diffDays < minDays) {
+                            minDays = diffDays;
+                        }
+                    }
+                });
+
+                let headerBadge = `<span class="text-xs text-slate-400 font-medium">${group.lots.length} lote(s)</span>`;
+                if (hasExpired) {
+                    headerBadge = `<span class="bg-rose-950 text-rose-400 border border-rose-800 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 w-fit"><i class="fa-solid fa-circle-exclamation"></i> Vencido</span>`;
+                } else if (minDays <= 30) {
+                    headerBadge = `<span class="bg-amber-950 text-amber-400 border border-amber-800 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 w-fit"><i class="fa-solid fa-triangle-exclamation"></i> Vence en ${minDays}d</span>`;
+                }
+
+                const isOpen = openAccordions[name] || false;
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 border border-slate-700/80 rounded-xl overflow-hidden shadow-md";
+                
+                let lotsHtml = '';
+                group.lots.forEach(lot => {
+                    lotsHtml += `
+                        <div class="bg-slate-900/90 p-3 rounded-lg border border-slate-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">
+                            <div class="space-y-0.5 text-sm">
+                                <div class="text-white font-semibold flex items-center gap-2">
+                                    <span>Lote: <span class="font-mono text-lab-400 font-bold">${lot.batch}</span></span>
+                                    <span class="text-xs text-slate-500 font-normal">(${lot.code})</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">Vencimiento: ${lot.expiry}</div>
+                            </div>
+                            <div class="flex items-center justify-between w-full sm:w-auto gap-3">
+                                <span class="font-bold text-sm ${lot.stock <= 3 ? 'text-rose-400 bg-rose-950 px-2.5 py-1 rounded border border-rose-900' : 'text-slate-200'}">${lot.stock} u.</span>
+                                <div class="flex gap-1.5">
+                                    <button onclick="adjustStockCloud('${lot.id}', 1)" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+                                    <button onclick="adjustStockCloud('${lot.id}', -1)" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs flex items-center justify-center"><i class="fa-solid fa-minus"></i></button>
+                                    <button onclick="openEditItemModal('${lot.id}')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded-lg text-xs flex items-center justify-center"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="deleteItemCloud('${lot.id}')" class="w-8 h-8 bg-slate-700 hover:bg-rose-950 text-rose-400 rounded-lg text-xs flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const badgeStyle = getTypeBadgeStyle(group.type);
+
+                card.innerHTML = `
+                    <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-3.5 grid grid-cols-12 gap-2 items-center cursor-pointer hover:bg-slate-750 transition select-none">
+                        <div class="col-span-8 space-y-1">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-xs px-2.5 py-0.5 rounded-full border ${badgeStyle} font-semibold">${group.type}</span>
+                                <span class="text-xs text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${group.section}</span>
+                            </div>
+                            <h3 class="text-base font-bold text-white leading-snug">${group.name}</h3>
+                        </div>
+                        
+                        <div class="col-span-4 flex flex-col items-end justify-center text-right space-y-1">
+                            <div class="flex items-center gap-1.5">
+                                <div class="text-left">
+                                    <div class="text-xs text-slate-400 leading-none">Stock Total</div>
+                                    <div class="text-base font-extrabold text-white mt-0.5">${group.totalStock} u.</div>
+                                </div>
+                                <i class="fa-solid fa-chevron-${isOpen ? 'up' : 'down'} text-xs text-slate-400 ml-1"></i>
+                            </div>
+                            <div>${headerBadge}</div>
+                        </div>
+                    </div>
+                    <div id="acc-${CSS.escape(name)}" class="${isOpen ? '' : 'hidden'} p-3 bg-slate-900/60 border-t border-slate-700/60 space-y-2">
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lotes Registrados:</p>
+                        ${lotsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleAccordion(name) {
+            openAccordions[name] = !openAccordions[name];
+            filterInventory();
+        }
+
+        function filterInventory() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const section = document.getElementById('sectionFilter').value;
+            const typeFilt = document.getElementById('typeFilter').value;
+            
+            const filtered = inventoryArray.filter(item => {
+                const itemType = item.type || 'Reactivo';
+                const matchesQuery = item.name.toLowerCase().includes(query) || item.code.toLowerCase().includes(query) || item.batch.toLowerCase().includes(query) || itemType.toLowerCase().includes(query);
+                const matchesSection = section === "" || item.section === section;
+                const matchesType = typeFilt === "" || itemType === typeFilt;
+                return matchesQuery && matchesSection && matchesType;
+            });
+            updateKPIs(inventoryArray);
+            renderInventory(filtered);
+        }
+
+        function adjustStockCloud(id, amount) {
+            const item = inventoryMap[id];
+            if (!item) return;
+            const newStock = Math.max(0, item.stock + amount);
+            if (dbRef) dbRef.child(id).update({ stock: newStock });
+        }
+
+        function deleteItemCloud(id) {
+            if (confirm('¿Eliminar este lote?')) {
+                if (dbRef) dbRef.child(id).remove();
+            }
+        }
+
+        function parseSmartQR(rawData) {
+            if (!rawData) return { code: '', batch: '', expiry: '' };
+            let code = '', batch = '', expiry = '';
+            let clean = rawData.trim().replace(/[\x1d\u001d\u0000-\u001f]/g, '|');
+
+            if (clean.includes('(')) {
+                const matches = [...clean.matchAll(/\((\d+)\)([^\(\)]+)/g)];
+                for (const match of matches) {
+                    const ai = match[1], val = match[2].trim();
+                    if (ai === '01') code = val;
+                    else if (ai === '17') {
+                        let yy = '20' + val.substring(0, 2), mm = val.substring(2, 4), dd = val.substring(4, 6);
+                        if (dd === '00' || dd > '31') dd = '01';
+                        expiry = `${yy}-${mm}-${dd}`;
+                    } else if (ai === '10') batch = val.split(' ')[0];
+                }
+            }
+
+            if (!code || !batch || !expiry) {
+                let raw = clean.replace(/[()\\]/g, ''), i = 0;
+                while (i < raw.length) {
+                    if (raw.startsWith('01', i) && i + 16 <= raw.length) {
+                        code = raw.substring(i + 2, i + 16); i += 16;
+                    } else if (raw.startsWith('17', i) && i + 8 <= raw.length) {
+                        let dateStr = raw.substring(i + 2, i + 8);
+                        if (/^\d{6}$/.test(dateStr)) {
+                            let yy = '20' + dateStr.substring(0, 2), mm = dateStr.substring(2, 4), dd = dateStr.substring(4, 6);
+                            if (dd === '00' || dd > '31') dd = '01';
+                            expiry = `${yy}-${mm}-${dd}`;
+                        }
+                        i += 8;
+                    } else if (raw.startsWith('10', i)) {
+                        i += 2; let sub = raw.substring(i), endIdx = raw.length;
+                        let sepIdx = sub.indexOf('|');
+                        if (sepIdx !== -1) endIdx = i + sepIdx;
+                        else {
+                            const nextAiMatch = sub.search(/(240|250|21|17\d{6})/);
+                            if (nextAiMatch !== -1 && nextAiMatch > 0) endIdx = i + nextAiMatch;
+                        }
+                        batch = raw.substring(i, endIdx).trim(); i = endIdx;
+                        if (raw[i] === '|') i++;
+                    } else if (raw.startsWith('240', i)) {
+                        i += 3; let sub = raw.substring(i);
+                        let sepIdx = sub.indexOf('|');
+                        if (sepIdx !== -1) i += sepIdx + 1;
+                        else break;
+                    } else i++;
+                }
+            }
+            return { code: code.trim(), batch: batch.trim(), expiry: expiry.trim() };
+        }
+
+        function startModalScanner() {
+            const container = document.getElementById('modalReaderContainer');
+            container.classList.remove('hidden');
+            modalQrCode = new Html5Qrcode("modal-reader");
+            const config = { fps: 10, qrbox: { width: 220, height: 220 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            modalQrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                const parsed = parseSmartQR(decodedText);
+                if (parsed.code) document.getElementById('itemCode').value = parsed.code;
+                if (parsed.batch) document.getElementById('itemBatch').value = parsed.batch;
+                if (parsed.expiry) document.getElementById('itemExpiry').value = parsed.expiry;
+                playBeep(); stopModalScanner();
+            }, (error) => {}).catch(err => { alert("Error de cámara."); container.classList.add('hidden'); });
+        }
+
+        function stopModalScanner() {
+            if (modalQrCode && modalQrCode.isScanning) {
+                modalQrCode.stop().then(() => document.getElementById('modalReaderContainer').classList.add('hidden')).catch(() => document.getElementById('modalReaderContainer').classList.add('hidden'));
+            } else document.getElementById('modalReaderContainer').classList.add('hidden');
+        }
+
+        function openNewItemModal(prefillData = null) {
+            document.getElementById('modalTitle').innerText = "Nuevo Reactivo o Insumo";
+            document.getElementById('editKey').value = "";
+            document.getElementById('itemForm').reset();
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
+            stopModalScanner();
+            
+            if (prefillData) {
+                if (prefillData.code) document.getElementById('itemCode').value = prefillData.code;
+                if (prefillData.batch) document.getElementById('itemBatch').value = prefillData.batch;
+                if (prefillData.expiry) document.getElementById('itemExpiry').value = prefillData.expiry;
+                document.getElementById('itemName').focus();
+            } else {
+                document.getElementById('itemCode').value = 'LAB' + Math.floor(100000 + Math.random() * 900000);
+            }
+            document.getElementById('itemModal').classList.remove('hidden');
+            document.getElementById('itemModal').classList.add('flex');
+        }
+
+        function openEditItemModal(id) {
+            const item = inventoryMap[id];
+            if (!item) return;
+            stopModalScanner();
+            document.getElementById('modalTitle').innerText = "Editar Lote";
+            document.getElementById('editKey').value = id;
+            document.getElementById('itemCode').value = item.code;
+            document.getElementById('itemName').value = item.name;
+            document.getElementById('itemType').value = item.type || 'Reactivo';
+            document.getElementById('itemSection').value = item.section;
+            document.getElementById('itemStock').value = item.stock;
+            document.getElementById('itemBatch').value = item.batch;
+            document.getElementById('itemExpiry').value = item.expiry;
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
+            document.getElementById('itemModal').classList.remove('hidden');
+            document.getElementById('itemModal').classList.add('flex');
+        }
+
+        function closeNewItemModal() {
+            stopModalScanner();
+            document.getElementById('nameSuggestionsDropdown').classList.add('hidden');
+            document.getElementById('itemModal').classList.add('hidden');
+            document.getElementById('itemModal').classList.remove('flex');
+        }
+
+        function saveItem(event) {
+            event.preventDefault();
+            stopModalScanner();
+            const key = document.getElementById('editKey').value;
+            const newItem = {
+                code: document.getElementById('itemCode').value,
+                name: document.getElementById('itemName').value,
+                type: document.getElementById('itemType').value,
+                section: document.getElementById('itemSection').value,
+                stock: parseInt(document.getElementById('itemStock').value),
+                batch: document.getElementById('itemBatch').value,
+                expiry: document.getElementById('itemExpiry').value
+            };
+            if (dbRef) {
+                if (key === "") dbRef.push(newItem);
+                else dbRef.child(key).set(newItem);
+            }
+            closeNewItemModal();
+        }
+
+        function setScanMode(mode) {
+            scanMode = mode;
+            document.getElementById('modeBtnDeduct').className = mode === 'deduct' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
+            document.getElementById('modeBtnAdd').className = mode === 'add' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
+            document.getElementById('modeBtnConsult').className = mode === 'consult' ? "flex-1 sm:flex-none px-3 py-1.5 rounded-md bg-lab-600 text-white font-medium transition text-xs" : "flex-1 sm:flex-none px-3 py-1.5 rounded-md text-slate-400 font-medium transition text-xs";
+        }
+
+        function startScanner() {
+            document.getElementById('scannerPlaceholder').classList.add('hidden');
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128] };
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                processScannedCode(decodedText); playBeep();
+            }, (error) => {}).catch(err => { alert("Error de cámara."); document.getElementById('scannerPlaceholder').classList.remove('hidden'); });
+            document.getElementById('startCameraBtn').classList.add('hidden');
+            document.getElementById('stopCameraBtn').classList.remove('hidden');
+        }
+
+        function stopScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scannerPlaceholder').classList.remove('hidden');
+                    document.getElementById('startCameraBtn').classList.remove('hidden');
+                    document.getElementById('stopCameraBtn').classList.add('hidden');
+                });
+            }
+        }
+
+        function handleManualScanKey(event) {
+            if (event.key === 'Enter') {
+                processScannedCode(document.getElementById('manualScanInput').value);
+                document.getElementById('manualScanInput').value = '';
+            }
+        }
+
+        function processScannedCode(rawData) {
+            const cleanRaw = rawData.trim();
+            const parsed = parseSmartQR(cleanRaw);
+            activeScanParsed = parsed;
+
+            const item = inventoryArray.find(i => i.code === parsed.code || (parsed.batch && i.batch === parsed.batch));
+            activeScanItem = item || null;
+
+            if (!item) { openNewItemModal(parsed); return; }
+
+            const modal = document.getElementById('scanActionModal');
+            const title = document.getElementById('scanModalTitle');
+            const body = document.getElementById('scanModalBody');
+            const qtyContainer = document.getElementById('qtyContainer');
+            const qtyLabel = document.getElementById('qtyLabel');
+            const confirmBtn = document.getElementById('scanModalConfirmBtn');
+            const qtyInput = document.getElementById('scanModalQty');
+
+            qtyInput.value = 1;
+
+            if (scanMode === 'consult') {
+                title.innerText = "Consulta de Ítem";
+                qtyContainer.classList.add('hidden');
+                confirmBtn.classList.add('hidden');
+                body.innerHTML = `
+                    <div class="text-sky-400 font-bold text-sm mb-1">📦 ${item.name}</div>
+                    <div class="grid grid-cols-2 gap-1 text-xs">
+                        <div><b>Tipo:</b> ${item.type || 'Reactivo'}</div>
+                        <div><b>Sección:</b> ${item.section}</div>
+                        <div><b>Stock actual:</b> ${item.stock} u.</div>
+                        <div><b>Lote:</b> ${item.batch}</div>
+                    </div>
+                `;
+            } else {
+                const actionVerb = scanMode === 'add' ? 'agregar' : 'descontar';
+                title.innerText = scanMode === 'add' ? '➕ Sumar Stock' : '⚡ Descontar Stock';
+                qtyContainer.classList.remove('hidden');
+                confirmBtn.classList.remove('hidden');
+                qtyLabel.innerText = `Cantidad a ${actionVerb}:`;
+                
+                confirmBtn.className = scanMode === 'add' 
+                    ? "flex-1 bg-lab-600 hover:bg-lab-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5"
+                    : "flex-1 bg-rose-600 hover:bg-rose-700 text-white h-11 rounded-lg text-sm font-semibold shadow flex items-center justify-center gap-1.5";
+
+                body.innerHTML = `
+                    <div class="text-white font-bold text-sm mb-1">📦 ${item.name}</div>
+                    <div class="grid grid-cols-2 gap-1 text-xs text-slate-300">
+                        <div><b>Tipo:</b> <span class="text-lab-400">${item.type || 'Reactivo'}</span></div>
+                        <div><b>Stock actual:</b> ${item.stock} u.</div>
+                        <div><b>Lote:</b> <span class="font-mono">${item.batch}</span></div>
+                        <div><b>Vencimiento:</b> ${item.expiry}</div>
+                    </div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeScanActionModal() {
+            document.getElementById('scanActionModal').classList.add('hidden');
+            document.getElementById('scanActionModal').classList.remove('flex');
+        }
+
+        function executeScanAction() {
+            if (!activeScanItem) return;
+            const qty = parseInt(document.getElementById('scanModalQty').value) || 1;
+            const cardContent = document.getElementById('scanResultContent');
+            const card = document.getElementById('scanResultCard');
+            card.classList.remove('hidden');
+
+            if (scanMode === 'add') {
+                adjustStockCloud(activeScanItem.id, qty);
+                cardContent.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡Se sumaron ${qty} u. a:</span> <b>${activeScanItem.name}</b>`;
+            } else if (scanMode === 'deduct') {
+                if (activeScanItem.stock >= qty) {
+                    adjustStockCloud(activeScanItem.id, -qty);
+                    cardContent.innerHTML = `<span class="text-rose-400 font-semibold">✔ ¡Se descontaron ${qty} u. de:</span> <b>${activeScanItem.name}</b>`;
+                } else {
+                    alert('No hay suficiente stock.');
+                    return;
+                }
+            }
+            playBeep();
+            closeScanActionModal();
+        }
+
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.frequency.value = 800; osc.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.1);
+            } catch(e) {}
+        }
+
+        function populateLabelSelect() {
+            const select = document.getElementById('labelItemSelect');
+            select.innerHTML = '';
+            inventoryArray.forEach((item) => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.text = `${item.name} (Lote: ${item.batch})`;
+                select.appendChild(opt);
+            });
+            generateBarcodePreview();
+        }
+
+        function generateBarcodePreview() {
+            const id = document.getElementById('labelItemSelect').value;
+            const item = inventoryMap[id];
+            if (!item) return;
+
+            document.getElementById('lblItemName').innerText = item.name;
+            document.getElementById('lblItemDetails').innerText = `Lote: ${item.batch} | Vto: ${item.expiry} | Sec: ${item.section}`;
+            try {
+                JsBarcode("#barcodeSvg", item.code, { format: "CODE128", lineColor: "#0f172a", width: 2, height: 45, displayValue: true });
+            } catch (e) {}
+        }
     </script>
 </body>
 </html>
