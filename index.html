@@ -131,7 +131,7 @@
         <section id="tab-inventory" class="tab-content space-y-3.5">
             <div class="grid grid-cols-3 gap-3">
                 <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</p>
                     <h4 id="kpiTotal" class="text-xl font-extrabold text-white mt-1">0</h4>
                 </div>
                 <div onclick="setKpiFilter('expiring')" id="kpiCardExpiring" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-amber-500 transition">
@@ -159,9 +159,9 @@
                     </select>
                     <select id="sectionFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                         <option value="">Todas las secciones</option>
-                        <option value="Química">Química Clínica</option>
-                        <option value="Hematología">Hematología</option>
                         <option value="Inmunología">Inmunología</option>
+                        <option value="Hematología">Hematología</option>
+                        <option value="Química clínica">Química Clínica</option>
                         <option value="Bacteriología">Bacteriología</option>
                         <option value="Biología Molecular">Biología Molecular</option>
                     </select>
@@ -181,7 +181,7 @@
             <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <div class="flex flex-col gap-3">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix Industrial
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escanee el código
                     </h2>
                     <div class="grid grid-cols-3 bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1">
                         <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="py-2 rounded-md bg-lab-600 text-white font-medium transition text-xs text-center truncate">⚡ Descontar</button>
