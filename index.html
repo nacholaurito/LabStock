@@ -48,9 +48,25 @@
             z-index: 20;
             pointer-events: none;
         }
+        @keyframes toast-slide {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: toast-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
+
+    <!-- NOTIFICACIÓN FLOTANTE (TOAST) PARA ACCIONES -->
+    <div id="toastNotification" class="fixed top-16 left-1/2 -translate-x-1/2 z-[100] hidden items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md max-w-sm w-[90%] text-sm toast-animate">
+        <div id="toastIconContainer" class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white"></div>
+        <div class="min-w-0">
+            <h4 id="toastTitle" class="font-bold text-white text-xs uppercase tracking-wider">Acción completada</h4>
+            <p id="toastMessage" class="text-xs text-slate-200 truncate"></p>
+        </div>
+    </div>
 
     <!-- PANTALLA DE BLOQUEO (VALIDA CONTRA FIREBASE) -->
     <div id="authScreen" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4">
@@ -59,7 +75,7 @@
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <div class="space-y-1">
-                <h2 class="text-lg font-bold text-white">LudovicApp</h2>
+                <h2 class="text-lg font-bold text-white">LudovicApp Seguro</h2>
                 <p class="text-xs text-slate-400">Ingresá la clave de acceso para desbloquear el inventario.</p>
             </div>
             <div class="space-y-2 text-left">
@@ -383,7 +399,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT PRINCIPAL CON AUTENTICACIÓN EN FIREBASE -->
+    <!-- SCRIPT PRINCIPAL CON TOAST Y VIBRACIÓN -->
     <script>
         let inventoryMap = {}; 
         let inventoryArray = []; 
@@ -409,17 +425,13 @@
             if (firebase.apps.length === 0) firebase.initializeApp(firebaseConfig);
         });
 
-        // VERIFICA LA CONTRASEÑA DIRECTAMENTE DESDE LA NUBE DE FIREBASE
         function verifyKeyWithFirebase() {
             const inputVal = document.getElementById('accessKeyInput').value.trim();
             if (!inputVal) return;
 
-            // Consultamos la clave maestra guardada en la base de datos de Firebase en una ruta llamada 'config/clave_maestra'
             firebase.database().ref('config/clave_maestra').once('value').then((snapshot) => {
                 const cloudKey = snapshot.val();
-                
-                // Si aún no habías creado la clave en Firebase, por defecto la primera vez aceptará "ludovic2026"
-                const masterKey = cloudKey || "ludovica2026";
+                const masterKey = cloudKey || "ludovic2026";
 
                 if (inputVal === masterKey) {
                     document.getElementById('authScreen').classList.add('hidden');
@@ -428,7 +440,6 @@
                     alert("Clave incorrecta.");
                 }
             }).catch((err) => {
-                // Si falla la lectura por permisos de Firebase, validamos con una por defecto de emergencia
                 if (inputVal === "ludovic2026") {
                     document.getElementById('authScreen').classList.add('hidden');
                     initAppAfterAuth();
@@ -436,6 +447,37 @@
                     alert("Error de conexión o clave incorrecta.");
                 }
             });
+        }
+
+        function showToast(message, type = 'add') {
+            const toast = document.getElementById('toastNotification');
+            const iconContainer = document.getElementById('toastIconContainer');
+            const titleEl = document.getElementById('toastTitle');
+            const msgEl = document.getElementById('toastMessage');
+
+            msgEl.innerText = message;
+            if (type === 'add') {
+                titleEl.innerText = "Stock Agregado";
+                toast.className = "fixed top-16 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border bg-emerald-950/95 border-emerald-600 backdrop-blur-md max-w-sm w-[90%] text-sm toast-animate";
+                iconContainer.className = "w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0 text-white font-bold";
+                iconContainer.innerHTML = '<i class="fa-solid fa-plus"></i>';
+            } else {
+                titleEl.innerText = "Stock Descontado";
+                toast.className = "fixed top-16 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border bg-rose-950/95 border-rose-600 backdrop-blur-md max-w-sm w-[90%] text-sm toast-animate";
+                iconContainer.className = "w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shrink-0 text-white font-bold";
+                iconContainer.innerHTML = '<i class="fa-solid fa-bolt"></i>';
+            }
+
+            toast.classList.remove('hidden');
+            
+            // Vibrar dispositivo si soporta la API (ej. celular)
+            if (navigator.vibrate) {
+                navigator.vibrate(type === 'add' ? [50, 50, 50] : [120]);
+            }
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
         }
 
         function initAppAfterAuth() {
@@ -866,8 +908,8 @@
                             <div class="flex items-center justify-between w-full sm:w-auto gap-3">
                                 <span class="font-bold text-sm ${lot.stock <= 3 ? 'text-rose-400 bg-rose-950 px-2.5 py-1 rounded border border-rose-900' : 'text-slate-200'}">${lot.stock} u.</span>
                                 <div class="flex gap-1.5">
-                                    <button onclick="adjustStockCloud('${lot.id}', 1)" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs"><i class="fa-solid fa-plus"></i></button>
-                                    <button onclick="adjustStockCloud('${lot.id}', -1)" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs"><i class="fa-solid fa-minus"></i></button>
+                                    <button onclick="adjustStockCloud('${lot.id}', 1, 'add')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs" title="Sumar 1"><i class="fa-solid fa-plus"></i></button>
+                                    <button onclick="adjustStockCloud('${lot.id}', -1, 'deduct')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs" title="Restar 1"><i class="fa-solid fa-minus"></i></button>
                                     <button onclick="openEditItemModal('${lot.id}')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 text-sky-400 rounded-lg text-xs"><i class="fa-solid fa-pen"></i></button>
                                     <button onclick="deleteItemCloud('${lot.id}')" class="w-8 h-8 bg-slate-700 hover:bg-rose-950 text-rose-400 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
                                 </div>
@@ -915,11 +957,16 @@
             renderInventory(filtered);
         }
 
-        function adjustStockCloud(id, amount) {
+        function adjustStockCloud(id, amount, customMode = null) {
             const item = inventoryMap[id];
             if (!item) return;
             const newStock = Math.max(0, item.stock + amount);
-            if (dbRef) dbRef.child(id).update({ stock: newStock });
+            if (dbRef) {
+                dbRef.child(id).update({ stock: newStock });
+                const modeUsed = customMode || (amount > 0 ? 'add' : 'deduct');
+                const actionText = amount > 0 ? `+${amount} u. en ${item.name} (Lote: ${item.batch})` : `${amount} u. en ${item.name} (Lote: ${item.batch})`;
+                showToast(actionText, modeUsed);
+            }
         }
 
         function deleteItemCloud(id) {
@@ -1025,12 +1072,10 @@
             card.classList.add('hidden');
 
             if (scanMode === 'add') {
-                adjustStockCloud(activeScanItem.id, qty);
-                cardContent.innerHTML = `<span class="text-lab-400 font-semibold">✔ ¡Se sumaron ${qty} u. a:</span> <b>${activeScanItem.name}</b>`;
+                adjustStockCloud(activeScanItem.id, qty, 'add');
             } else if (scanMode === 'deduct') {
                 if (activeScanItem.stock >= qty) {
-                    adjustStockCloud(activeScanItem.id, -qty);
-                    cardContent.innerHTML = `<span class="text-rose-400 font-semibold">✔ ¡Se descontaron ${qty} u. de:</span> <b>${activeScanItem.name}</b>`;
+                    adjustStockCloud(activeScanItem.id, -qty, 'deduct');
                 } else {
                     alert('No hay suficiente stock.');
                     return;
