@@ -59,8 +59,8 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-24 md:pb-8 font-sans antialiased selection:bg-lab-500 selection:text-white" onclick="closeNameDropdownOutside(event)">
 
-    <!-- NOTIFICACIÓN FLOTANTE (TOAST) PARA ACCIONES -->
-    <div id="toastNotification" class="fixed top-16 left-1/2 -translate-x-1/2 z-[100] hidden items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md max-w-sm w-[90%] text-sm toast-animate">
+    <!-- NOTIFICACIÓN FLOTANTE (TOAST) PERFECTAMENTE CENTRADA -->
+    <div id="toastNotification" class="fixed top-16 inset-x-4 mx-auto z-[100] hidden items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md max-w-sm text-sm toast-animate">
         <div id="toastIconContainer" class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white"></div>
         <div class="min-w-0">
             <h4 id="toastTitle" class="font-bold text-white text-xs uppercase tracking-wider">Acción completada</h4>
@@ -399,7 +399,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT PRINCIPAL CON TOAST Y VIBRACIÓN -->
+    <!-- SCRIPT PRINCIPAL -->
     <script>
         let inventoryMap = {}; 
         let inventoryArray = []; 
@@ -449,6 +449,31 @@
             });
         }
 
+        function playActionSound(type) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                if (type === 'add') {
+                    osc.frequency.setValueAtTime(880, ctx.currentTime); // Tono agudo alegre
+                } else {
+                    osc.frequency.setValueAtTime(320, ctx.currentTime); // Tono grave de alerta
+                }
+
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.18);
+            } catch(e) {}
+        }
+
         function showToast(message, type = 'add') {
             const toast = document.getElementById('toastNotification');
             const iconContainer = document.getElementById('toastIconContainer');
@@ -458,22 +483,27 @@
             msgEl.innerText = message;
             if (type === 'add') {
                 titleEl.innerText = "Stock Agregado";
-                toast.className = "fixed top-16 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border bg-emerald-950/95 border-emerald-600 backdrop-blur-md max-w-sm w-[90%] text-sm toast-animate";
+                toast.className = "fixed top-16 inset-x-4 mx-auto z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border bg-emerald-950/95 border-emerald-600 backdrop-blur-md max-w-sm text-sm toast-animate";
                 iconContainer.className = "w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0 text-white font-bold";
                 iconContainer.innerHTML = '<i class="fa-solid fa-plus"></i>';
             } else {
                 titleEl.innerText = "Stock Descontado";
-                toast.className = "fixed top-16 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border bg-rose-950/95 border-rose-600 backdrop-blur-md max-w-sm w-[90%] text-sm toast-animate";
+                toast.className = "fixed top-16 inset-x-4 mx-auto z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border bg-rose-950/95 border-rose-600 backdrop-blur-md max-w-sm text-sm toast-animate";
                 iconContainer.className = "w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shrink-0 text-white font-bold";
                 iconContainer.innerHTML = '<i class="fa-solid fa-bolt"></i>';
             }
 
             toast.classList.remove('hidden');
             
-            // Vibrar dispositivo si soporta la API (ej. celular)
-            if (navigator.vibrate) {
-                navigator.vibrate(type === 'add' ? [50, 50, 50] : [120]);
-            }
+            // Reproducir sonido de alerta inmediato
+            playActionSound(type);
+
+            // Intentar vibrar si el navegador lo permite
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate(type === 'add' ? [50, 50, 50] : [120]);
+                }
+            } catch(e) {}
 
             setTimeout(() => {
                 toast.classList.add('hidden');
