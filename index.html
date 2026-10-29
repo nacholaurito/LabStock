@@ -131,7 +131,7 @@
         <section id="tab-inventory" class="tab-content space-y-3.5">
             <div class="grid grid-cols-3 gap-3">
                 <div onclick="setKpiFilter('all')" id="kpiCardAll" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-lab-500 transition">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</p>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Lotes</p>
                     <h4 id="kpiTotal" class="text-xl font-extrabold text-white mt-1">0</h4>
                 </div>
                 <div onclick="setKpiFilter('expiring')" id="kpiCardExpiring" class="bg-slate-800/90 border-2 border-slate-700/70 rounded-xl p-3 text-center shadow-sm cursor-pointer hover:border-amber-500 transition">
@@ -159,11 +159,9 @@
                     </select>
                     <select id="sectionFilter" onchange="filterInventory()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 h-10 text-sm text-slate-200 focus:outline-none focus:border-lab-500">
                         <option value="">Todas las secciones</option>
-                        <option value="Inmunología">Inmunología</option>
-                        <option value="Química clínica">Química Clínica</option>
+                        <option value="Química">Química Clínica</option>
                         <option value="Hematología">Hematología</option>
-                        <option value="Hemostasia">Hemostasia</option>
-                        <option value="Endocrinología">Endocrinología</option>
+                        <option value="Inmunología">Inmunología</option>
                         <option value="Bacteriología">Bacteriología</option>
                         <option value="Biología Molecular">Biología Molecular</option>
                     </select>
@@ -183,7 +181,7 @@
             <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg max-w-xl mx-auto space-y-4">
                 <div class="flex flex-col gap-3">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-barcode text-lab-500"></i> Escanee el código
+                        <i class="fa-solid fa-barcode text-lab-500"></i> Escáner DataMatrix Industrial
                     </h2>
                     <div class="grid grid-cols-3 bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs gap-1">
                         <button onclick="setScanMode('deduct')" id="modeBtnDeduct" class="py-2 rounded-md bg-lab-600 text-white font-medium transition text-xs text-center truncate">⚡ Descontar</button>
@@ -433,7 +431,7 @@
 
             firebase.database().ref('config/clave_maestra').once('value').then((snapshot) => {
                 const cloudKey = snapshot.val();
-                const masterKey = cloudKey || "ludovica";
+                const masterKey = cloudKey || "ludovic2026";
 
                 if (inputVal === masterKey) {
                     document.getElementById('authScreen').classList.add('hidden');
@@ -461,9 +459,9 @@
                 
                 osc.type = 'sine';
                 if (type === 'add') {
-                    osc.frequency.setValueAtTime(880, ctx.currentTime); // Tono agudo alegre
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
                 } else {
-                    osc.frequency.setValueAtTime(320, ctx.currentTime); // Tono grave de alerta
+                    osc.frequency.setValueAtTime(320, ctx.currentTime);
                 }
 
                 gain.gain.setValueAtTime(0.15, ctx.currentTime);
@@ -496,11 +494,8 @@
             }
 
             toast.classList.remove('hidden');
-            
-            // Reproducir sonido de alerta inmediato
             playActionSound(type);
 
-            // Intentar vibrar si el navegador lo permite
             try {
                 if (navigator.vibrate) {
                     navigator.vibrate(type === 'add' ? [50, 50, 50] : [120]);
@@ -873,6 +868,19 @@
             }
         }
 
+        function getTypeBadgeClass(type) {
+            switch(type) {
+                case 'Calibrador':
+                    return 'bg-sky-950 text-sky-400 border-sky-800';
+                case 'Control':
+                    return 'bg-purple-950 text-purple-400 border-purple-800';
+                case 'Consumible':
+                    return 'bg-amber-950 text-amber-400 border-amber-800';
+                default: // Reactivo
+                    return 'bg-emerald-950 text-emerald-400 border-emerald-800';
+            }
+        }
+
         function renderInventory(dataToRender = inventoryArray) {
             const container = document.getElementById('inventoryGroupedContainer');
             const emptyState = document.getElementById('emptyInventory');
@@ -922,6 +930,7 @@
                 if (hasExpired) headerBadge = `<span class="bg-rose-950 text-rose-400 border border-rose-800 text-xs font-bold px-2 py-0.5 rounded">Vencido</span>`;
                 else if (minDays <= 30) headerBadge = `<span class="bg-amber-950 text-amber-400 border border-amber-800 text-xs font-bold px-2 py-0.5 rounded">Vence en ${minDays}d</span>`;
 
+                const typeBadgeClass = getTypeBadgeClass(group.type);
                 const isOpen = openAccordions[name] || false;
                 const card = document.createElement('div');
                 card.className = "bg-slate-800 border border-slate-700/80 rounded-xl overflow-hidden shadow-md";
@@ -953,7 +962,7 @@
                     <div onclick="toggleAccordion('${name.replace(/'/g, "\\'")}')" class="p-4 grid grid-cols-12 gap-2 items-center cursor-pointer hover:bg-slate-750 transition">
                         <div class="col-span-8 space-y-1.5">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-xs px-2 py-0.5 rounded-full border bg-emerald-950 text-emerald-400 border-emerald-800 font-semibold">${group.type}</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full border ${typeBadgeClass} font-semibold">${group.type}</span>
                                 <span class="text-xs px-2 py-0.5 rounded-full border bg-slate-900 text-slate-300 border-slate-700 font-medium">${group.section}</span>
                             </div>
                             <h3 class="text-base font-bold text-white leading-snug">${group.name}</h3>
